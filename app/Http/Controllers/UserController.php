@@ -6,34 +6,54 @@ use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
+    // $user is the username string for now. After the explicit binding is enabled
+    // in AppServiceProvider (Module 5), change it to: User $user
     public function index()
     {
-        return 'Employee list';
+        $users = [
+            ['name' => 'Admin User', 'email' => 'admin@example.com', 'username' => 'admin', 'role' => 'admin',    'status' => 'active',   'created_at' => '2026-10-01'],
+            ['name' => 'John Doe',   'email' => 'john@example.com',  'username' => 'john',  'role' => 'employee', 'status' => 'active',   'created_at' => '2026-10-02'],
+            ['name' => 'Ravi Kumar', 'email' => 'ravi@example.com',  'username' => 'ravi',  'role' => 'employee', 'status' => 'inactive', 'created_at' => '2026-10-03'],
+        ];
+
+        return view('users.index', compact('users'));
     }
 
     public function create()
     {
-        return 'Create User form';
+        return view('users.create');
     }
 
     public function store(Request $request)
     {
-        return redirect()->route('admin.employees.index');
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User created (placeholder)');
     }
 
-
-    public function edit($id)
+    public function show($user)
     {
-        return 'Edit User ' . $id;
+        return redirect()->route('admin.users.edit', $user);
     }
 
-    public function update(Request $request, $id)
+    public function edit($user)
     {
-        return redirect()->route('admin.users.index');
+        $user = [
+            'name' => 'John Doe', 'email' => 'john@example.com',
+            'username' => $user, 'role' => 'employee', 'status' => 'active',
+        ];
+
+        return view('users.edit', compact('user'));
     }
 
-    public function destroy($id)
+    public function update(Request $request, $user)
     {
-        return redirect()->route('admin.users.index');
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User updated (placeholder)');
+    }
+
+    public function destroy($user)
+    {
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User deactivated (placeholder)');
     }
 }

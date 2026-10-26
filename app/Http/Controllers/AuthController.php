@@ -6,22 +6,19 @@ use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    // GET /login: show the login page
     public function showLogin()
     {
-        return 'Login page';
+        return view('auth.login');
     }
 
-    // POST /login: handle the login form
+    // Placeholder. Real authentication (Auth::attempt) comes in Module 8.
     public function login(Request $request)
     {
-        // Only to show the Request object working; no real checking yet
-        $credentials = $request->only('email', 'password');
+        $credentials = $request->only('email', 'password');   // Request object demo
 
         return redirect()->route('dashboard')->with('success', 'Logged in (placeholder)');
     }
 
-    // POST /logout: log the user out
     public function logout(Request $request)
     {
         return redirect()->route('login')->with('success', 'Logged out (placeholder)');
