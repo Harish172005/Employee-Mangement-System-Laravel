@@ -2,19 +2,49 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
+use App\Models\Employee;
+use Illuminate\Support\Facades\DB;
+
 class ReportController extends Controller
 {
     public function __invoke()
     {
-        // Dummy data. In Module 5 this comes from a Query Builder join/group by query.
-        $report = [
-            ['department' => 'IT',         'employees' => 45, 'avg_salary' => 52000, 'total_salary' => 2340000],
-            ['department' => 'HR',         'employees' => 15, 'avg_salary' => 38000, 'total_salary' => 570000],
-            ['department' => 'Finance',    'employees' => 20, 'avg_salary' => 45000, 'total_salary' => 900000],
-            ['department' => 'Sales',      'employees' => 30, 'avg_salary' => 40000, 'total_salary' => 1200000],
-            ['department' => 'Operations', 'employees' => 15, 'avg_salary' => 36000, 'total_salary' => 540000],
-        ];
+        $connection = DB::connection();
+        $connection->enableQueryLog();
 
-        return view('reports', compact('report'));
+        $employeesWithoutEagerLoading = Employee::withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)
+            ->limit(10)
+            ->get();
+        foreach ($employeesWithoutEagerLoading as $employee) {
+            $employee->department?->name;
+        }
+        $nPlusOneQueryCount = count($connection->getQueryLog());
+
+        $connection->flushQueryLog();
+        $employeesWithEagerLoading = Employee::withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)
+            ->with('department')
+            ->limit(10)
+            ->get();
+        foreach ($employeesWithEagerLoading as $employee) {
+            $employee->department?->name;
+        }
+        $eagerLoadedQueryCount = count($connection->getQueryLog());
+        $connection->disableQueryLog();
+
+        $report = Department::query()
+            ->withCount(['employees' => fn ($query) => $query->withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)])
+            ->withAvg(['employees as avg_salary' => fn ($query) => $query->withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)], 'salary')
+            ->withSum(['employees as total_salary' => fn ($query) => $query->withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)], 'salary')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Department $department) => [
+                'department' => $department->name,
+                'employees' => $department->employees_count,
+                'avg_salary' => $department->avg_salary ?? 0,
+                'total_salary' => $department->total_salary ?? 0,
+            ]);
+
+        return view('reports', compact('report', 'nPlusOneQueryCount', 'eagerLoadedQueryCount'));
     }
 }

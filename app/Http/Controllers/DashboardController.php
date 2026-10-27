@@ -2,22 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Status;
+use App\Models\Department;
+use App\Models\Employee;
+
 class DashboardController extends Controller
 {
     public function __invoke()
     {
-        // Dummy data. Real counts come from Eloquent in Module 6.
+        $employees = Employee::withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class);
         $stats = [
-            'Total Employees'    => 125,
-            'Active Employees'   => 118,
-            'Inactive Employees' => 7,
-            'Departments'        => 8,
+            'Total Employees' => (clone $employees)->count(),
+            'Active Employees' => (clone $employees)->active()->count(),
+            'Inactive Employees' => (clone $employees)->inactive()->count(),
+            'Departments' => Department::count(),
         ];
 
-        $byDepartment = [
-            'IT' => 45, 'HR' => 15, 'Finance' => 20, 'Sales' => 30, 'Operations' => 15,
-        ];
+        $departments = Department::withCount([
+            'employees as employees_count' => fn ($query) => $query->withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class),
+        ])->withSum([
+            'employees as salary_sum' => fn ($query) => $query->withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class),
+        ], 'salary')->orderBy('name')->get();
+        $byDepartment = $departments->mapWithKeys(fn (Department $department) => [
+            $department->name => $department->employees_count,
+        ]);
+        $totalSalary = $departments->sum('salary_sum');
 
-        return view('dashboard', compact('stats', 'byDepartment'));
+        return view('dashboard', compact('stats', 'byDepartment', 'totalSalary'));
     }
 }
