@@ -6,7 +6,7 @@
     <x-card>
         <form method="POST" data-validate-form action="{{ route('admin.departments.store') }}">
             @csrf
-            @include('departments._form')
+            @include('departments._form', ['department' => null])
             <button class="btn btn-primary">Save</button>
             <a href="{{ route('admin.departments.index') }}" class="btn btn-secondary">Cancel</a>
         </form>

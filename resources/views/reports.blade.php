@@ -3,7 +3,15 @@
 @section('heading', 'Reports')
 
 @section('content')
-    <x-card title="Employees and Salary by Department (placeholder data)">
+    <x-card title="Eager-loading query comparison">
+        <p class="mb-0">
+            Loading 10 employees without eager loading ran <strong>{{ $nPlusOneQueryCount }}</strong> queries;
+            loading them with <code>with('department')</code> ran <strong>{{ $eagerLoadedQueryCount }}</strong>.
+            The eager-loaded result avoids one department lookup per employee.
+        </p>
+    </x-card>
+
+    <x-card title="Employees and Salary by Department">
         <table class="table table-striped mb-0">
             <thead>
                 <tr><th>Department</th><th>Employees</th><th>Average Salary</th><th>Total Salary</th></tr>
@@ -13,12 +21,12 @@
                     <tr>
                         <td>{{ $row['department'] }}</td>
                         <td>{{ $row['employees'] }}</td>
-                        <td>{{ number_format($row['avg_salary']) }}</td>
-                        <td>{{ number_format($row['total_salary']) }}</td>
+                        <td>{{ number_format((float) $row['avg_salary'], 2) }}</td>
+                        <td>{{ number_format((float) $row['total_salary'], 2) }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
     </x-card>
-    <p class="text-muted small">In Module 5 this table is produced with the Query Builder (join, group by, having, aggregates).</p>
+    <p class="text-muted small">Employee relations are eager-aggregated with Eloquent to avoid per-department queries.</p>
 @endsection
