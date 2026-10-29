@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\User;
 
 class UserController extends Controller
 {
@@ -10,11 +11,7 @@ class UserController extends Controller
     // in AppServiceProvider (Module 5), change it to: User $user
     public function index()
     {
-        $users = [
-            ['name' => 'Admin User', 'email' => 'admin@example.com', 'username' => 'admin', 'role' => 'admin',    'status' => 'active',   'created_at' => '2026-10-01'],
-            ['name' => 'John Doe',   'email' => 'john@example.com',  'username' => 'john',  'role' => 'employee', 'status' => 'active',   'created_at' => '2026-10-02'],
-            ['name' => 'Ravi Kumar', 'email' => 'ravi@example.com',  'username' => 'ravi',  'role' => 'employee', 'status' => 'inactive', 'created_at' => '2026-10-03'],
-        ];
+        $users = User::all();
 
         return view('users.index', compact('users'));
     }

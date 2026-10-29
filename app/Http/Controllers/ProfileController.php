@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Employee;
 use Illuminate\Http\Request;
+use App\Models\Department;
 
 class ProfileController extends Controller
 {
@@ -37,12 +39,12 @@ class ProfileController extends Controller
         return redirect()->route('profile.show')->with('success', 'Profile updated (placeholder)');
     }
 
-    public function department()
+   public function department()
     {
-        $department = [
-            'name' => 'IT', 'description' => 'Software and infrastructure',
-            'employee_count' => 45, 'status' => 'active',
-        ];
+        $employee = Employee::where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $department = Department::findOrFail($employee->department_id);
 
         return view('profile.department', compact('department'));
     }

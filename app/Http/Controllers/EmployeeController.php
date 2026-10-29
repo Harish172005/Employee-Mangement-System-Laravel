@@ -5,39 +5,36 @@ namespace App\Http\Controllers;
 use App\Enums\Gender;
 use App\Enums\Role;
 use App\Enums\Status;
-use App\Models\Department;
+use App\Http\Requests\EmployeeRequest;
 use App\Models\Employee;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
+    private const PHOTO_DISK = 'public';
+    private const PHOTO_DIR = 'employee-photos';
+
     public function index(Request $request)
     {
-        $filters = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
-            'department' => ['nullable', 'integer', 'exists:departments,id'],
-            'status' => ['nullable', Rule::enum(Status::class)],
-            'gender' => ['nullable', Rule::enum(Gender::class)],
+        $filters = $request->validate($this->filterRules() + [
             'sort' => ['nullable', Rule::in(['employee_code', 'first_name', 'last_name', 'salary', 'date_of_joining', 'created_at'])],
             'direction' => ['nullable', Rule::in(['asc', 'desc'])],
             'with_trashed' => ['nullable', 'boolean'],
         ]);
 
-        $query = Employee::withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)
-            ->with(['department', 'user'])
-            ->search($filters['q'] ?? null)
-            ->when(isset($filters['department']), fn ($query) => $query->where('department_id', $filters['department']))
-            ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
-            ->when(isset($filters['gender']), fn ($query) => $query->where('gender', $filters['gender']));
+        $query = $this->filteredQuery($filters);
 
         if ($request->boolean('with_trashed')) {
             $query->withTrashed();
         }
 
-        $sort = $filters['sort'] ?? 'last_name';
-        $employees = $query->orderBy($sort, $filters['direction'] ?? 'asc')
+        $employees = $query
+            ->orderBy($filters['sort'] ?? 'last_name', $filters['direction'] ?? 'asc')
             ->orderBy('first_name')
             ->paginate(10)
             ->withQueryString();
@@ -45,88 +42,15 @@ class EmployeeController extends Controller
         return view('employees.index', compact('employees', 'filters'));
     }
 
-    public function create()
-    {
-        return view('employees.create');
-    }
-
-    public function store(Request $request)
-    {
-        $data = $this->validatedData($request);
-        $data['employee_code'] = 'EMP' . str_pad((string) ($this->employeeQuery()->withTrashed()->max('id') + 1), 4, '0', STR_PAD_LEFT);
-        $data['profile_photo'] = $request->file('profile_photo')?->store('employee-photos', 'public');
-        Employee::create($data);
-
-        return redirect()->route('admin.employees.index')->with('success', 'Employee created successfully.');
-    }
-
-    public function show(int $id)
-    {
-        $employee = $this->employeeQuery()->findOrFail($id);
-        $employee->load(['department', 'skills', 'activityLogs']);
-
-        return view('employees.show', compact('employee'));
-    }
-
-    public function edit(int $id)
-    {
-        $employee = $this->employeeQuery()->findOrFail($id);
-
-        return view('employees.edit', compact('employee'));
-    }
-
-    public function update(Request $request, int $id)
-    {
-        $employee = $this->employeeQuery()->findOrFail($id);
-        $data = $this->validatedData($request, $employee);
-
-        if ($request->hasFile('profile_photo')) {
-            if ($employee->profile_photo) {
-                Storage::disk('public')->delete($employee->profile_photo);
-            }
-            $data['profile_photo'] = $request->file('profile_photo')->store('employee-photos', 'public');
-        }
-
-        $employee->fill($data);
-        $employee->save();
-
-        return redirect()->route('admin.employees.show', $employee)->with('success', 'Employee updated successfully.');
-    }
-
-    public function destroy(int $id)
-    {
-        $this->employeeQuery()->findOrFail($id)->delete();
-
-        return redirect()->route('admin.employees.index')->with('success', 'Employee deactivated successfully.');
-    }
-
-    public function restore(int $id)
-    {
-        $employee = $this->employeeQuery()->withTrashed()->find($id);
-        abort_if($employee === null, 404);
-        abort_unless($employee->trashed(), 404);
-        $employee->restore();
-
-        return redirect()->route('admin.employees.index', ['with_trashed' => 1])->with('success', 'Employee restored successfully.');
-    }
-
-    public function forceDelete(int $id)
-    {
-        abort_unless(auth()->check() && auth()->user()->role === Role::Admin, 403);
-
-        $employee = $this->employeeQuery()->withTrashed()->findOrFail($id);
-        abort_unless($employee->trashed(), 404);
-        $employee->forceDelete();
-
-        return redirect()->route('admin.employees.index', ['with_trashed' => 1])->with('success', 'Employee permanently deleted.');
-    }
-
     public function search(Request $request)
     {
-        $query = $request->validate(['q' => ['nullable', 'string', 'max:100']])['q'] ?? null;
-        $employees = $this->employeeQuery()->with('department')->search($query)
-            ->orderBy('last_name')->limit(10)->get()
-            ->map(fn ($employee) => [
+        $filters = $request->validate($this->filterRules());
+
+        $employees = $this->filteredQuery($filters)
+            ->orderBy('last_name')
+            ->limit(10)
+            ->get()
+            ->map(fn (Employee $employee) => [
                 'id' => $employee->id,
                 'code' => $employee->employee_code,
                 'name' => $employee->full_name,
@@ -146,10 +70,141 @@ class EmployeeController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return view('employees.create');
+    }
+
+    public function store(EmployeeRequest $request)
+    {
+        $data = $request->validated();
+        unset($data['profile_photo']);
+        $path = null;
+
+        try {
+            $data['employee_code'] = 'EMP' . str_pad((string) (Employee::withTrashed()->max('id') + 1), 4, '0', STR_PAD_LEFT);
+
+            if ($request->hasFile('profile_photo')) {
+                $path = $request->file('profile_photo')->store(self::PHOTO_DIR, self::PHOTO_DISK);
+                $data['profile_photo'] = $path;
+            }
+
+            Employee::create($data);
+        } catch (\Throwable $e) {
+            if ($path) {
+                Storage::disk(self::PHOTO_DISK)->delete($path);
+            }
+
+            Log::error('Employee create failed: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'Failed to create employee.');
+        }
+
+        return redirect()->route('admin.employees.index')->with('success', 'Employee created successfully.');
+    }
+
+    public function show(int $id)
+    {
+        $employee = Employee::withTrashed()->findOrFail($id);
+
+        $employee->load([
+            'department',
+            'activityLogs' => fn ($query) => $query->latest('id')->limit(10),
+        ]);
+
+        $logs = $employee->activityLogs;
+
+        return view('employees.show', compact('employee', 'logs'));
+    }
+
+    public function edit(int $id)
+    {
+        $employee = Employee::findOrFail($id);
+
+        return view('employees.edit', compact('employee'));
+    }
+
+    public function update(EmployeeRequest $request, Employee $employee)
+    {
+        $data = $request->validated();
+        unset($data['profile_photo']);
+
+        $oldPhoto = $employee->profile_photo;
+        $newPhoto = null;
+
+        try {
+            if ($request->hasFile('profile_photo')) {
+                $newPhoto = $request->file('profile_photo')->store(self::PHOTO_DIR, self::PHOTO_DISK);
+                $data['profile_photo'] = $newPhoto;
+            }
+
+            $employee->update($data);
+        } catch (\Throwable $e) {
+            if ($newPhoto) {
+                Storage::disk(self::PHOTO_DISK)->delete($newPhoto);
+            }
+
+            Log::error('Employee update failed: ' . $e->getMessage(), ['employee_id' => $employee->id]);
+
+            return back()->withInput()->with('error', 'Could not update the employee. Please try again.');
+        }
+
+        if ($newPhoto && $oldPhoto) {
+            Storage::disk(self::PHOTO_DISK)->delete($oldPhoto);
+        }
+
+        return redirect()->route('admin.employees.show', $employee)->with('success', 'Employee updated.');
+    }
+
+    public function destroy(Employee $employee)
+    {
+        DB::transaction(function () use ($employee) {
+            $employee->status = Status::Inactive;
+            $employee->saveQuietly();
+            $employee->delete();
+        });
+
+        return redirect()->route('admin.employees.index')->with('success', 'Employee deactivated successfully.');
+    }
+
+    public function restore(int $id)
+    {
+        $employee = Employee::withTrashed()->findOrFail($id);
+        abort_unless($employee->trashed(), 404);
+
+        DB::transaction(function () use ($employee) {
+            $employee->restore();
+            $employee->status = Status::Active;
+            $employee->saveQuietly();
+        });
+
+        return redirect()->route('admin.employees.index', ['with_trashed' => 1])
+            ->with('success', 'Employee restored successfully.');
+    }
+
+    public function forceDelete(int $id)
+    {
+        abort_if(auth()->check() && auth()->user()->role !== Role::Admin, 403);
+
+        $employee = Employee::withTrashed()->findOrFail($id);
+        abort_unless($employee->trashed(), 404);
+
+        $photo = $employee->profile_photo;
+        $employee->forceDelete();
+
+        if ($photo) {
+            Storage::disk(self::PHOTO_DISK)->delete($photo);
+        }
+
+        return redirect()->route('admin.employees.index', ['with_trashed' => 1])
+            ->with('success', 'Employee permanently deleted.');
+    }
+
     public function export()
     {
-        $employees = $this->employeeQuery()->with('department')->orderBy('last_name')->get();
+        $employees = Employee::with('department')->orderBy('last_name')->get();
         $csv = "Code,Name,Email,Department,Status\n";
+
         foreach ($employees as $employee) {
             $csv .= implode(',', array_map(
                 fn ($value) => '"' . str_replace('"', '""', (string) $value) . '"',
@@ -163,29 +218,27 @@ class EmployeeController extends Controller
         ]);
     }
 
-    private function employeeQuery()
+    private function filterRules(): array
     {
-        return Employee::withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class);
+        return [
+            'q' => ['nullable', 'string', 'max:100'],
+            'department' => ['nullable', 'integer', 'exists:departments,id'],
+            'status' => ['nullable', Rule::enum(Status::class)],
+            'gender' => ['nullable', Rule::enum(Gender::class)],
+        ];
     }
 
-    private function validatedData(Request $request, ?Employee $employee = null): array
+    private function filteredQuery(array $filters): Builder
     {
-        $id = $employee?->id;
-
-        return $request->validate([
-            'first_name' => ['required', 'string', 'max:50'],
-            'last_name' => ['required', 'string', 'max:50'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('employees', 'email')->ignore($id)],
-            'phone' => ['required', 'string', 'max:10'],
-            'date_of_birth' => ['required', 'date'],
-            'date_of_joining' => ['required', 'date'],
-            'gender' => ['required', Rule::enum(Gender::class)],
-            'department_id' => ['required', 'exists:departments,id'],
-            'designation' => ['required', 'string', 'max:100'],
-            'salary' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
-            'address' => ['nullable', 'string', 'max:5000'],
-            'status' => ['required', Rule::enum(Status::class)],
-            'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
-        ]);
+        return Employee::query()
+            ->with(['department', 'user'])
+            ->search($filters['q'] ?? null)
+            ->when($filters['department'] ?? null, fn (Builder $query, $department) => $query->where('department_id', $department))
+            ->when($filters['status'] ?? null, fn (Builder $query, $status) => match ($status) {
+                Status::Active->value => $query->active(),
+                Status::Inactive->value => $query->inactive(),
+                default => $query,
+            })
+            ->when($filters['gender'] ?? null, fn (Builder $query, $gender) => $query->where('gender', $gender));
     }
 }
