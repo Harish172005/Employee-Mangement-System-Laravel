@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Department;
 use App\Models\Employee;
 use App\Observers\EmployeeObserver;
+use App\Observers\DepartmentObserver;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -19,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Employee::observe(EmployeeObserver::class);
 
+        Department::observe(DepartmentObserver::class);
+
         // Pagination links use Bootstrap 5 markup instead of Tailwind
         Paginator::useBootstrapFive();
 
@@ -27,7 +31,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Gives every employees.* view a $departments list
         View::composer('employees.*', function ($view) {
-            $view->with('departments', \App\Models\Department::query()->orderBy('name')->pluck('name', 'id'));
+            $view->with('departments', Department::query()->orderBy('name')->pluck('name', 'id'));
         });
     }
 }
