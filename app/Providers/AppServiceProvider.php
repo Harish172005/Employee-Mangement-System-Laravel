@@ -7,8 +7,11 @@ use App\Models\Employee;
 use App\Observers\EmployeeObserver;
 use App\Observers\DepartmentObserver;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use App\Models\User;
+use App\Enums\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -33,5 +36,12 @@ class AppServiceProvider extends ServiceProvider
         View::composer('employees.*', function ($view) {
             $view->with('departments', Department::query()->orderBy('name')->pluck('name', 'id'));
         });
+       $isAdmin = fn (User $user): bool =>
+        $user->role === Role::Admin;
+
+    Gate::define('manage-departments', $isAdmin);
+    Gate::define('manage-employees', $isAdmin);
+    Gate::define('manage-users', $isAdmin);
+    Gate::define('manage-reports', $isAdmin);
     }
 }
