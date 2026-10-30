@@ -13,7 +13,7 @@ class ReportController extends Controller
         $connection = DB::connection();
         $connection->enableQueryLog();
 
-        $employeesWithoutEagerLoading = Employee::withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)
+        $employeesWithoutEagerLoading = Employee::query()
             ->limit(10)
             ->get();
         foreach ($employeesWithoutEagerLoading as $employee) {
@@ -22,7 +22,7 @@ class ReportController extends Controller
         $nPlusOneQueryCount = count($connection->getQueryLog());
 
         $connection->flushQueryLog();
-        $employeesWithEagerLoading = Employee::withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)
+        $employeesWithEagerLoading = Employee::query()
             ->with('department')
             ->limit(10)
             ->get();
@@ -33,9 +33,9 @@ class ReportController extends Controller
         $connection->disableQueryLog();
 
         $report = Department::query()
-            ->withCount(['employees' => fn ($query) => $query->withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)])
-            ->withAvg(['employees as avg_salary' => fn ($query) => $query->withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)], 'salary')
-            ->withSum(['employees as total_salary' => fn ($query) => $query->withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)], 'salary')
+            ->withCount('employees')
+            ->withAvg('employees as avg_salary')
+            ->withSum('employees as total_salary', 'salary')
             ->orderBy('name')
             ->get()
             ->map(fn (Department $department) => [

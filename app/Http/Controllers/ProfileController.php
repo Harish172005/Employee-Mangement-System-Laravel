@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use App\Models\Department;
+use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
@@ -22,6 +24,7 @@ class ProfileController extends Controller
 
     public function show()
     {
+        Gate::authorize('view', Employee::class);
         $employee = $this->sample();
 
         return view('profile.show', compact('employee'));
@@ -36,18 +39,36 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
+        Gate::authorize('update', Employee::class);
         return redirect()->route('profile.show')->with('success', 'Profile updated (placeholder)');
     }
 
    public function department()
     {
-        $employee = Employee::where('user_id', auth()->id())
+        Gate::authorize('view', Department::class);
+        $employee = Employee::where('email', auth()->user()->email)
             ->firstOrFail();
 
-        $department = Department::findOrFail($employee->department_id);
+        $query = Department::withCount('employees')->findOrFail($employee->department_id);
+        
+         $department = ['name' => $query->name, 
+        'description' => $query->description, 
+        'employee_count' => $query->employees_count, 
+        'status' => $query->status];
 
-        return view('profile.department', compact('department'));
+        $query = Employee::where('department_id', $employee->department_id)
+            ->get();
+        $employees = $query->map(function ($employee) {
+            return [
+                'employee_code' => $employee->employee_code,
+                'full_name' => $employee->full_name,
+                'email' => $employee->email,
+                'status' => $employee->status,
+            ];
+        });
+        return view('profile.department', compact('department', 'employees'));
     }
+
 
     public function editPassword()
     {

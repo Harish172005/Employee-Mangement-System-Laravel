@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Gate;
 
 class DepartmentController extends Controller
 {
@@ -42,6 +43,7 @@ class DepartmentController extends Controller
 
     public function store(DepartmentRequest $request)
     {
+        Gate::authorize('create', Department::class);
         Department::create($request->validated());
 
         return redirect()->route('admin.departments.index')
@@ -50,6 +52,7 @@ class DepartmentController extends Controller
 
     public function show(int $id)
     {
+        Gate::authorize('viewAny', Department::class);
         $department = Department::withTrashed()
             ->with('employees')
             ->withCount('employees')
@@ -67,6 +70,7 @@ class DepartmentController extends Controller
 
     public function update(DepartmentRequest $request, Department $department)
     {
+        Gate::authorize('update', Department::class);
         $department->update($request->validated());
 
         return redirect()->route('admin.departments.show', $department)
@@ -75,6 +79,7 @@ class DepartmentController extends Controller
 
     public function destroy(Department $department)
     {
+        Gate::authorize('delete', Department::class);
         DB::transaction(function () use ($department) {
             $department->status = Status::Inactive;
             $department->saveQuietly();
@@ -87,6 +92,7 @@ class DepartmentController extends Controller
 
     public function restore(int $id)
     {
+        Gate::authorize('restore', Department::class);
         $department = Department::withTrashed()->findOrFail($id);
 
         abort_unless($department->trashed(), 404);
@@ -103,6 +109,7 @@ class DepartmentController extends Controller
 
     public function forceDelete(int $id)
     {
+        Gate::authorize('forceDelete', Department::class);
         abort_unless(
             auth()->check() && auth()->user()->role === Role::Admin,
             403

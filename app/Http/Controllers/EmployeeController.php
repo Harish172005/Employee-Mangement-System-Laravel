@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 
 class EmployeeController extends Controller
 {
@@ -21,6 +23,7 @@ class EmployeeController extends Controller
 
     public function index(Request $request)
     {
+        Gate::authorize('viewAny', Employee::class);
         $filters = $request->validate($this->filterRules() + [
             'sort' => ['nullable', Rule::in(['employee_code', 'first_name', 'last_name', 'salary', 'date_of_joining', 'created_at'])],
             'direction' => ['nullable', Rule::in(['asc', 'desc'])],
@@ -72,7 +75,9 @@ class EmployeeController extends Controller
 
     public function create()
     {
-        return view('employees.create');
+        return view('employees.create', [
+            'availableUsers' => $this->availableUsers(),
+        ]);
     }
 
     public function store(EmployeeRequest $request)
@@ -105,6 +110,7 @@ class EmployeeController extends Controller
 
     public function show(int $id)
     {
+        Gate::authorize('view', Employee::class);
         $employee = Employee::withTrashed()->findOrFail($id);
 
         $employee->load([
@@ -119,9 +125,11 @@ class EmployeeController extends Controller
 
     public function edit(int $id)
     {
+        Gate::authorize('edit', Employee::class);
         $employee = Employee::findOrFail($id);
+        $availableUsers = $this->availableUsers($employee); 
 
-        return view('employees.edit', compact('employee'));
+        return view('employees.edit',compact('employee', 'availableUsers' ));
     }
 
     public function update(EmployeeRequest $request, Employee $employee)
@@ -158,6 +166,7 @@ class EmployeeController extends Controller
 
     public function destroy(Employee $employee)
     {
+        Gate::authorize('delete', Employee::class);
         DB::transaction(function () use ($employee) {
             $employee->status = Status::Inactive;
             $employee->saveQuietly();
@@ -169,6 +178,7 @@ class EmployeeController extends Controller
 
     public function restore(int $id)
     {
+        Gate::authorize('restore', Employee::class);
         $employee = Employee::withTrashed()->findOrFail($id);
         abort_unless($employee->trashed(), 404);
 
@@ -184,6 +194,7 @@ class EmployeeController extends Controller
 
     public function forceDelete(int $id)
     {
+        Gate::authorize('forceDelete', Employee::class);
         abort_if(auth()->check() && auth()->user()->role !== Role::Admin, 403);
 
         $employee = Employee::withTrashed()->findOrFail($id);
@@ -241,4 +252,18 @@ class EmployeeController extends Controller
             })
             ->when($filters['gender'] ?? null, fn (Builder $query, $gender) => $query->where('gender', $gender));
     }
+
+    private function availableUsers(?Employee $employee = null): array
+{
+    return User::where('role', Role::Employee->value)
+        ->where(function ($query) use ($employee) {
+            $query->doesntHave('employee');
+            if ($employee?->user_id) {
+                $query->orWhere('id', $employee->user_id);
+            }
+        })
+        ->orderBy('name')
+        ->pluck('name', 'id')
+        ->all();
+}
 }
