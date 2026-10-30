@@ -2,6 +2,8 @@
     <div class="col-md-6"><x-form.input name="first_name" label="First Name" data-validate="required" :value="old('first_name', $employee?->first_name)" /></div>
     <div class="col-md-6"><x-form.input name="last_name" label="Last Name" data-validate="required" :value="old('last_name', $employee?->last_name)" /></div>
     <div class="col-md-6"><x-form.input name="email" label="Email" type="email" data-validate="required|email" :value="old('email', $employee?->email)" /></div>
+    <x-form.select name="user_id" label="Login account (optional)" placeholder="-- None --"
+               :options="$availableUsers" :selected="$employee?->user_id" />
     <div class="col-md-6"><x-form.input name="phone" label="Phone" data-validate="required|phone" :value="old('phone', $employee?->phone)" /></div>
     <div class="col-md-4"><x-form.input name="date_of_birth" label="Date of Birth" type="date" data-validate="required" :value="old('date_of_birth', $employee?->date_of_birth?->format('Y-m-d'))" /></div>
     <div class="col-md-4"><x-form.input name="date_of_joining" label="Date of Joining" type="date" data-validate="required" :value="old('date_of_joining', $employee?->date_of_joining?->format('Y-m-d'))" /></div>

@@ -9,13 +9,24 @@
     @stack('styles')
 </head>
 <body class="bg-light">
-    @include('partials.navbar')
 
+    @auth
+
+        @if (auth()->user()->role->value  === 'admin')
+            @include('partials.admin-navbar')
+        @elseif (auth()->user()->role->value === 'employee')
+            @include('partials.employee-navbar')
+        @else
+            <p>Unknown role</p>
+        @endif
+    @endauth
+
+    @guest
+    <p>User is not logged in</p>
+    <a href="{{ route('login') }}">Login</a>
+    @endguest
     <div class="container-fluid">
         <div class="row">
-            <div class="col-md-2 bg-white border-end p-0 sidebar">
-                @include('partials.sidebar')
-            </div>
             <main class="col-md-10 p-4">
                 @include('partials.alerts')
                 <h3 class="mb-3">@yield('heading')</h3>

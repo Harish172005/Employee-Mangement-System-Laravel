@@ -3,6 +3,7 @@
 @section('heading', 'Add User')
 
 @section('content')
+
     <x-card>
         <form method="POST" data-validate-form action="{{ route('admin.users.store') }}">
             @csrf

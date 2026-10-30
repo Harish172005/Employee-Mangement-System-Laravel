@@ -19,7 +19,7 @@
                         <td>{{ $user['name'] }}</td>
                         <td>{{ $user['email'] }}</td>
                         <td>{{ $user['username'] }}</td>
-                        <td><span class="badge bg-primary">{{ ucfirst($user['role']) }}</span></td>
+                        <td><span class="badge bg-primary">{{ $user['role'] }}</span></td>
                         <td><x-status-badge :status="$user['status']" /></td>
                         <td>{{ $user['created_at'] }}</td>
                         <td>
