@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\User;
-use App\Scopes\ActiveEmployeeScope;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -30,7 +29,7 @@ class EmployeeSeeder extends Seeder
                 ]
             );
 
-            Employee::withoutGlobalScope(ActiveEmployeeScope::class)->withTrashed()->updateOrCreate(
+            Employee::all()->withTrashed()->updateOrCreate(
                 ['employee_code' => 'EMP0001'],
                 [
                     'user_id'         => $user->id,
@@ -52,7 +51,7 @@ class EmployeeSeeder extends Seeder
 
         // Stable seed keys keep reruns from creating duplicate demo employees.
         for ($index = 1; $index <= 50; $index++) {
-            Employee::withoutGlobalScope(ActiveEmployeeScope::class)->withTrashed()->firstOrCreate(
+            Employee::all()->withTrashed()->firstOrCreate(
                 ['employee_code' => 'EMPSEED' . str_pad((string) $index, 4, '0', STR_PAD_LEFT)],
                 [
                     'user_id' => null,
