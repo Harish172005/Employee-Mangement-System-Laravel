@@ -14,7 +14,7 @@ class DepartmentPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->role === Role::Admin;
     }
 
     /**
@@ -22,7 +22,7 @@ class DepartmentPolicy
      */
     public function view(User $user, Department $department): bool
     {
-         if ($user->role->value === 'admin') {
+         if ($user->role->value === Role::Admin->value) {
             return true;
         }
 
@@ -38,7 +38,7 @@ class DepartmentPolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user): bool
+    public function edit(User $user): bool
     {
         return $user->role === Role::Admin;
     }

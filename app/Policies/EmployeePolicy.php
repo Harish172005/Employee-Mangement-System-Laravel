@@ -36,9 +36,9 @@ class EmployeePolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Employee $employee): bool
+    public function update(User $user, Employee $employee = null): bool
     {
-        return $user->role === Role::Admin && $user->id === $employee->user_id;
+        return $user->role === Role::Admin || $user->id === $employee->user_id;
     }
 
     /**
