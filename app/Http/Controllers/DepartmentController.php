@@ -11,27 +11,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Gate;
+use App\Services\DepartmentService;
+use App\Http\Requests\DepartmentFilterRequest;
 
 class DepartmentController extends Controller
 {
-    public function index(Request $request)
+    public function __construct(protected DepartmentService $departmentService)
+    { 
+    }
+   
+    public function index(DepartmentFilterRequest $request)
     {
-        $filters = $request->validate($this->filterRules() + [
-            'sort' => ['nullable', Rule::in(['name', 'status', 'created_at'])],
-            'direction' => ['nullable', Rule::in(['asc', 'desc'])],
-            'with_trashed' => ['nullable', 'boolean'],
-        ]);
+        $filters = $request->validated();
 
-        $query = $this->filteredQuery($filters);
-
-        if ($request->boolean('with_trashed')) {
-            $query->withTrashed();
-        }
-
-        $departments = $query
-            ->orderBy($filters['sort'] ?? 'name', $filters['direction'] ?? 'asc')
-            ->paginate(10)
-            ->withQueryString();
+        $departments = $this->departmentService->getAllDepartments($filters);
 
         return view('departments.index', compact('departments', 'filters'));
     }
@@ -44,7 +37,7 @@ class DepartmentController extends Controller
     public function store(DepartmentRequest $request)
     {
         Gate::authorize('create', Department::class);
-        Department::create($request->validated());
+        $this->departmentService->createDepartment($request->validated());
 
         return redirect()->route('admin.departments.index')
             ->with('success', 'Department created successfully.');
@@ -53,17 +46,14 @@ class DepartmentController extends Controller
     public function show(int $id)
     {
         Gate::authorize('viewAny', Department::class);
-        $department = Department::withTrashed()
-            ->with('employees')
-            ->withCount('employees')
-            ->findOrFail($id);
+        $department = $this->departmentService->getDepartmentById($id);
 
         return view('departments.show', compact('department'));
     }
 
     public function edit(int $id)
     {
-        $department = Department::findOrFail($id);
+        $department = $this->departmentService->getDepartmentById($id);
 
         return view('departments.edit', compact('department'));
     }
@@ -71,7 +61,7 @@ class DepartmentController extends Controller
     public function update(DepartmentRequest $request, Department $department)
     {
         Gate::authorize('update', Department::class);
-        $department->update($request->validated());
+        $this->departmentService->updateDepartment($department, $request->validated());
 
         return redirect()->route('admin.departments.show', $department)
             ->with('success', 'Department updated successfully.');
@@ -80,11 +70,6 @@ class DepartmentController extends Controller
     public function destroy(Department $department)
     {
         Gate::authorize('delete', Department::class);
-        DB::transaction(function () use ($department) {
-            $department->status = Status::Inactive;
-            $department->saveQuietly();
-            $department->delete();
-        });
 
         return redirect()->route('admin.departments.index')
             ->with('success', 'Department deactivated successfully.');
@@ -93,15 +78,8 @@ class DepartmentController extends Controller
     public function restore(int $id)
     {
         Gate::authorize('restore', Department::class);
-        $department = Department::withTrashed()->findOrFail($id);
 
-        abort_unless($department->trashed(), 404);
-
-        DB::transaction(function () use ($department) {
-            $department->restore();
-            $department->status = Status::Active;
-            $department->saveQuietly();
-        });
+        $this->departmentService->restoreDepartment($id);
 
         return redirect()->route('admin.departments.index', ['with_trashed' => 1])
             ->with('success', 'Department restored successfully.');
@@ -133,26 +111,5 @@ class DepartmentController extends Controller
             'employees' => ['nullable', Rule::in(['with', 'without'])],
             'employee_status' => ['nullable', Rule::enum(Status::class)],
         ];
-    }
-
-    private function filteredQuery(array $filters): Builder
-    {
-        return Department::query()
-            ->withCount('employees')
-            ->when($filters['q'] ?? null, fn (Builder $query, $term) => $query->where(function (Builder $query) use ($term) {
-                $query->where('name', 'like', "%{$term}%")
-                    ->orWhere('description', 'like', "%{$term}%");
-            }))
-            ->when($filters['status'] ?? null, fn (Builder $query, $status) => match ($status) {
-                Status::Active->value => $query->where('status', Status::Active),
-                Status::Inactive->value => $query->where('status', Status::Inactive),
-                default => $query,
-            })
-            ->when(($filters['employees'] ?? null) === 'with', fn (Builder $query) => $query->has('employees'))
-            ->when(($filters['employees'] ?? null) === 'without', fn (Builder $query) => $query->doesntHave('employees'))
-            ->when($filters['employee_status'] ?? null, fn (Builder $query, $status) => $query->whereHas(
-                'employees',
-                fn (Builder $employees) => $employees->where('status', $status)
-            ));
     }
 }

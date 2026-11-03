@@ -12,16 +12,38 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use App\Models\User;
 use App\Enums\Role;
+use Illuminate\Support\Facades\Route;
+use App\Contracts\EmployeeRepository;
+use App\Repositories\EloquentEmployeeRepository;
+use App\Contracts\DepartmentRepository;
+use App\Repositories\EloquentDepartmentRepository; 
+use App\Contracts\UserRepository;
+use App\Repositories\EloquentUserRepository; 
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+         $this->app->bind(
+            EmployeeRepository::class,
+            EloquentEmployeeRepository::class
+        );
+
+        $this->app->bind(
+            DepartmentRepository::class,
+            EloquentDepartmentRepository::class
+        );
+
+        $this->app->bind(
+            UserRepository::class,
+            EloquentUserRepository::class
+        );
     }
 
     public function boot(): void
     {
+
+        Route::bind('user', fn (string $value) => User::where('username', $value)->firstOrFail());
         Employee::observe(EmployeeObserver::class);
 
         Department::observe(DepartmentObserver::class);

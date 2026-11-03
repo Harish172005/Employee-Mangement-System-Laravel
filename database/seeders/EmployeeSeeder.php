@@ -10,65 +10,78 @@ use Illuminate\Support\Facades\DB;
 
 class EmployeeSeeder extends Seeder
 {
-    public function run(): void
-    {
-        $departmentIds = Department::pluck('id');
-        $itId = Department::where('name', 'IT')->value('id');
+   public function run(): void
+{
+    $departmentIds = Department::pluck('id');
 
-        // One employee with a login account. Both rows are saved together:
-        // if either insert fails, DB::transaction() rolls back both.
-        DB::transaction(function () use ($itId) {
+    if ($departmentIds->isEmpty()) {
+        throw new \Exception(
+            'No departments found. Please seed departments first.'
+        );
+    }
+
+    DB::transaction(function () use ($departmentIds) {
+
+        for ($i = 1; $i <= 50; $i++) {
+
+            // Generate the employee's name only once
+            $firstName = fake()->firstName();
+            $lastName = fake()->lastName();
+
+            // Create/update the User
             $user = User::updateOrCreate(
-                ['email' => 'employee@example.com'],
+                ['email' => "employee{$i}@example.com"],
                 [
-                    'name'     => 'John Doe',
-                    'username' => 'john',
+                    // Same person represented in the users table
+                    'name'     => $firstName . ' ' . $lastName,
+                    'username' => "employee{$i}",
                     'password' => 'password',
                     'role'     => 'employee',
-                    'status'   => 'active',
+                    'status'   => fake()->boolean(90)
+                        ? 'active'
+                        : 'inactive',
                 ]
             );
 
-            Employee::all()->withTrashed()->updateOrCreate(
-                ['employee_code' => 'EMP0001'],
+            // Create/update the corresponding Employee
+            Employee::updateOrCreate(
+                ['employee_code' =>
+                    'EMP' . str_pad($i, 4, '0', STR_PAD_LEFT)
+                ],
                 [
                     'user_id'         => $user->id,
-                    'first_name'      => 'John',
-                    'last_name'       => 'Doe',
-                    'email'           => 'john.doe@example.com',
-                    'phone'           => '9876543210',
-                    'date_of_birth'   => '1998-05-14',
-                    'gender'          => 'male',
-                    'date_of_joining' => '2024-06-01',
-                    'department_id'   => $itId,
-                    'designation'     => 'Software Developer',
-                    'salary'          => 45000,
-                    'address'         => 'Salem, Tamil Nadu',
-                    'status'          => 'active',
-                ]
-            );
-        });
-
-        // Stable seed keys keep reruns from creating duplicate demo employees.
-        for ($index = 1; $index <= 50; $index++) {
-            Employee::all()->withTrashed()->firstOrCreate(
-                ['employee_code' => 'EMPSEED' . str_pad((string) $index, 4, '0', STR_PAD_LEFT)],
-                [
-                    'user_id' => null,
-                    'first_name' => fake()->firstName(),
-                    'last_name' => fake()->lastName(),
-                    'email' => fake()->unique()->safeEmail(),
-                    'phone' => fake()->randomElement(['6', '7', '8', '9']) . fake()->numerify('#########'),
-                    'date_of_birth' => fake()->dateTimeBetween('-50 years', '-21 years')->format('Y-m-d'),
-                    'gender' => fake()->randomElement(['male', 'female', 'other']),
-                    'date_of_joining' => fake()->dateTimeBetween('-5 years', 'now')->format('Y-m-d'),
-                    'department_id' => $departmentIds->random(),
-                    'designation' => fake()->jobTitle(),
-                    'salary' => fake()->numberBetween(20000, 120000),
-                    'address' => fake()->address(),
-                    'status' => fake()->boolean(90) ? 'active' : 'inactive',
+                    'first_name'      => $firstName,
+                    'last_name'       => $lastName,
+                    'email'           => "employee{$i}@company.com",
+                    'phone'           => fake()->numerify('##########'),
+                    'date_of_birth'   => fake()
+                        ->dateTimeBetween('-50 years', '-20 years')
+                        ->format('Y-m-d'),
+                    'gender'          => fake()
+                        ->randomElement(['male', 'female']),
+                    'date_of_joining' => fake()
+                        ->dateTimeBetween('-5 years', 'now')
+                        ->format('Y-m-d'),
+                    'department_id'   => $departmentIds->random(),
+                    'designation'     => fake()->randomElement([
+                        'Software Developer',
+                        'Senior Developer',
+                        'QA Engineer',
+                        'HR Executive',
+                        'Project Manager',
+                    ]),
+                    'salary'          => fake()->numberBetween(
+                        25000,
+                        100000
+                    ),
+                    'address'         => fake()->address(),
+                    'status'          => fake()->boolean(90)
+                        ? 'active'
+                        : 'inactive',
                 ]
             );
         }
+    });
+    
     }
 }

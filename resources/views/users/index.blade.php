@@ -40,4 +40,5 @@
             </tbody>
         </table>
     </x-card>
+    <div id="user-pagination">{{ $users->links() }}</div>
 @endsection

@@ -11,41 +11,36 @@ use Illuminate\Support\Facades\DB;
 class ProfileController extends Controller
 {
     // Dummy data. In Module 8 this becomes the logged-in employee: $request->user()->employee
-    private function sample(): array
-    {
-        return [
-            'code' => 'EMP001', 'first_name' => 'John', 'last_name' => 'Doe',
-            'email' => 'john@example.com', 'phone' => '9876543210',
-            'address' => 'Salem, Tamil Nadu', 'department' => 'IT',
-            'designation' => 'Developer', 'date_of_joining' => '2024-06-01',
-            'status' => 'active',
-        ];
-    }
 
     public function show()
     {
-        Gate::authorize('view', Employee::class);
-        $employee = $this->sample();
+        $employee = auth()->user()->employee;
+        Gate::authorize('view', $employee);
+
+        $employee = Employee::findOrFail($employee->id);
 
         return view('profile.show', compact('employee'));
     }
 
     public function edit()
     {
-        $employee = $this->sample();
+        $employee = auth()->user()->employee;
+        Gate::authorize('update', $employee);
 
         return view('profile.edit', compact('employee'));
     }
 
     public function update(Request $request)
     {
-        Gate::authorize('update', Employee::class);
-        return redirect()->route('profile.show')->with('success', 'Profile updated (placeholder)');
+        $employee = auth()->user()->employee;
+        Gate::authorize('update', $employee);
+        return redirect()->route('profile.show')->with('success', 'Profile updated successfullly');
     }
 
    public function department()
     {
-        Gate::authorize('view', Department::class);
+        $department = auth()->user()->employee->department;
+        Gate::authorize('view', $department);   
         $employee = Employee::where('email', auth()->user()->email)
             ->firstOrFail();
 

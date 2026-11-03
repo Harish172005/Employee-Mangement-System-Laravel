@@ -11,10 +11,9 @@
 <body class="bg-light">
 
     @auth
-
-        @if (auth()->user()->role->value  === 'admin')
+        @if (auth()->user()?->role->value  === 'admin')
             @include('partials.admin-navbar')
-        @elseif (auth()->user()->role->value === 'employee')
+        @elseif (auth()->user()?->role->value === 'employee')
             @include('partials.employee-navbar')
         @else
             <p>Unknown role</p>

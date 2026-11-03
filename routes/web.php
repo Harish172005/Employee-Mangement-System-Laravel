@@ -33,8 +33,8 @@ use Illuminate\Support\Facades\Route;
 // 1. Public
 // ------------------------------------------------------------------
 
-// Everyone is sent to the dashboard; a guest is then redirected on to the login page by "auth".
-Route::redirect('/', '/dashboard');
+
+Route::redirect('/', '/login');
 
 Route::controller(AuthController::class)->group(function () {
     Route::middleware('guest')->group(function () {
@@ -75,8 +75,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active', 'role:admi
     // Users: {user} is resolved by username (explicit binding in AppServiceProvider)
     Route::resource('users', UserController::class)->middleware('can:manage-users');
 
-    // Reports: "role:admin" already protects the group; the gate is a second lock on this page
-    Route::get('reports', ReportController::class)->middleware('can:manage-reports')->name('reports');
 });
 
 

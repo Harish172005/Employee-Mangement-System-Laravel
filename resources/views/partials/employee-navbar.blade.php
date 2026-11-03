@@ -13,11 +13,11 @@
             <div class="navbar-nav flex-row me-3">
                 <a class="nav-link px-2"
                    href="{{ route('profile.department') }}">
-                    Department
+                    My Department
                 </a>    
                 <a class="nav-link px-2"
-                   href="{{ route('profile.show') }}">
-                    Users
+                   href="{{ route('profile.show', auth()->user()->employee->id) }}">
+                    My Profile
                 </a>
             </div>
 

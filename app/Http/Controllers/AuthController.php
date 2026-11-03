@@ -21,25 +21,25 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'username' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
-        $key = Str::lower($request->email) . '|' . $request->ip();
+        $key = Str::lower($request->username) . '|' . $request->ip();
         
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
-            return back()->withErrors(['email' => "Too many login attempts. Please try again in $seconds seconds."])->onlyInput('email');
+            return back()->withErrors(['username' => "Too many login attempts. Please try again in $seconds seconds."])->onlyInput('username');
         }
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             RateLimiter::hit($key, 60);
-            return back()->withErrors(['email' => 'These credentials do not match our records.'])->onlyInput('email');
+            return back()->withErrors(['username' => 'These credentials do not match our records.'])->onlyInput('username');
         }
 
         if (Auth::user()->status !== Status::Active) {
             Auth::logout();
 
-            return back()->withErrors(['email' => 'This account is inactive.'])->onlyInput('email');
+            return back()->withErrors(['username' => 'This account is inactive.'])->onlyInput('username');
         }
         RateLimiter::clear($key);
 

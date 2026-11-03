@@ -1,11 +1,10 @@
-<nav class="navbar navbar-dark bg-dark px-3">
-    <a class="navbar-brand d-flex align-items-center"
+<nav class="navbar sticky-top navbar-dark bg-success px-3">
+    <a class="navbar-brand align-items-center"
        href="{{ route('admin.dashboard') }}">
         <img src="{{ asset('images/logo.svg') }}"
              alt="Logo"
              height="28"
              class="me-2">
-        {{ $appName }}
     </a>
 
     @auth
