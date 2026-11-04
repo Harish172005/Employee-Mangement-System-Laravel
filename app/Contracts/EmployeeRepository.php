@@ -6,7 +6,9 @@ use App\Models\Employee;
 
 interface EmployeeRepository
 {
-    public function getAllEmployees($filters = []): LengthAwarePaginator;  // Should return a LengthAwarePaginator
+    public function getAllEmployees(): LengthAwarePaginator;  // Should return a LengthAwarePaginator
+
+    public function getFilteredEmployees($filters = []): LengthAwarePaginator;  // Should return a LengthAwarePaginator 
     public function createEmployee(array $data): Employee;  // Should return an Employee model instance
     public function updateEmployee(Employee $employee, array $data): Employee;  // Should return an Employee model instance
 

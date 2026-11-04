@@ -2,25 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Gender;
 use App\Enums\Role;
 use App\Enums\Status;
 use App\Http\Requests\EmployeeRequest;
 use App\Models\Employee;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use App\Services\EmployeeService;
 use App\Http\Requests\EmployeeFilterRequest;
 class EmployeeController extends Controller
 {
-    private const PHOTO_DISK = 'public';
-
     public function __construct(protected EmployeeService $employeeService){
     }
 
@@ -28,20 +21,7 @@ class EmployeeController extends Controller
     {
         Gate::authorize('viewAny', Employee::class);
         $filters = $request->validated();
-        $employees = $this->employeeService->getAllEmployees($filters);
-
-        // $query = $this->filteredQuery($filters);
-
-        // if ($request->boolean('with_trashed')) {
-        //     $employees->withTrashed();
-        // }
-
-        // $employees = $query
-        //     ->orderBy($filters['sort'] ?? 'last_name', $filters['direction'] ?? 'asc')
-        //     ->orderBy('first_name')
-        //     ->paginate(10)
-        //     ->withQueryString();
-
+        $employees = $this->employeeService->getAllEmployees();
         return view('employees.index', compact('employees', 'filters'));
     }
 
@@ -49,22 +29,31 @@ class EmployeeController extends Controller
     {
         $filters = $request->validated();
 
-        $employees = $this->filteredQuery($filters)
-            ->orderBy('last_name')
-            ->limit(10)
-            ->get()
-            ->map(fn ($employee) => [
-                'id' => $employee->id,
-                'code' => $employee->employee_code,
-                'name' => $employee->full_name,
-                'department' => $employee->department?->name,
-                'status' => $employee->status->value,
-                'urls' => [
-                    'show' => route('admin.employees.show', $employee),
-                    'edit' => route('admin.employees.edit', $employee),
-                    'destroy' => route('admin.employees.destroy', $employee),
-                ],
-            ]);
+        $employees = $this->employeeService->getFilteredEmployees($filters);
+
+        $employees->getCollection()->transform(function (Employee $employee) {
+        return [
+            'id' => $employee->id,
+            'employee_code' => $employee->employee_code,
+            'first_name' => $employee->first_name,
+            'last_name' => $employee->last_name,
+            'status' => $employee->status->value,
+            'deleted_at' => $employee->deleted_at,
+
+            'department' => [
+                'id' => $employee->department?->id,
+                'name' => $employee->department?->name,
+            ],
+
+            'urls' => [
+                'show' => route('admin.employees.show', $employee),
+                'edit' => route('admin.employees.edit', $employee),
+                'destroy' => route('admin.employees.destroy', $employee),
+                'restore' => route('admin.employees.restore', $employee),
+                'force_delete' => route('admin.employees.force-delete', $employee),
+            ],
+        ];
+    });
 
         return response()->json([
             'status' => true,

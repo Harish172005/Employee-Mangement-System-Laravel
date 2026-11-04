@@ -20,10 +20,14 @@ const PHOTO_DISK = 'public';
     {
         $this->employeeRepository = $employeeRepository;
     }
-
-    public function getAllEmployees($filters = [])
+    function getAllEmployees()
     {
-        return $this->employeeRepository->getAllEmployees($filters ?? []);
+        return $this->employeeRepository->getAllEmployees();
+    }
+
+    public function getFilteredEmployees($filters = [])
+    {
+        return $this->employeeRepository->getFilteredEmployees($filters ?? []);
         
     }
     public function getEmployeeById($id)
