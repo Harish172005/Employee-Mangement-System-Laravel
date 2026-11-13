@@ -5,18 +5,18 @@
 
 @section('content')
 
-    <div class="d-flex flex-wrap gap-2 justify-content-between mb-3">
+    <div class="filter-panel d-flex flex-wrap align-items-start gap-3 justify-content-between mb-3">
 
         <form id="employee-filter-form"
               method="GET"
               action="{{ route('admin.employees.index') }}"
-              class="row g-2">
+              class="employee-filters">
 
             <input type="text"
                    id="employee-search"
                    name="q"
                    value="{{ $filters['q'] ?? '' }}"
-                   class="form-control"
+                   class="form-control employee-search-field"
                    placeholder="Search name, email or code..."
                    autocomplete="off"
                    data-search-url="{{ route('admin.employees.search') }}">
@@ -111,7 +111,7 @@
 
             </select>
 
-            <label class="form-check">
+            <label class="employee-filter-check">
 
                 <input class="form-check-input"
                        type="checkbox"
@@ -128,7 +128,7 @@
         </form>
 
         <a href="{{ route('admin.employees.create') }}"
-           class="btn btn-primary">
+           class="btn btn-primary align-self-start text-nowrap">
             Add Employee
         </a>
 
@@ -138,7 +138,7 @@
     <div class="mb-3">
 
         <a href="{{ route('admin.employees.export') }}"
-           class="btn btn-sm btn-outline-success">
+           class="btn btn-sm btn-outline-primary">
             Export CSV
         </a>
 
@@ -149,7 +149,7 @@
 
         <div class="table-responsive">
 
-            <table class="table table-striped mb-0">
+            <table class="table table-hover align-middle mb-0">
 
                 <thead>
                     <tr>
@@ -190,7 +190,7 @@
                                 <x-status-badge :status="$employee->status" />
                             </td>
 
-                            <td>
+                            <td class="table-actions">
 
                                 @if (
                                     $employee->trashed()

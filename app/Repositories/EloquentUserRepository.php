@@ -9,11 +9,6 @@ use App\Enums\Status;
 
 class EloquentUserRepository implements UserRepository
 {
-    public function createUser(array $data): User
-    {
-        return User::create($data);
-    }
-
     public function deleteUser($user) 
     {
             return DB::transaction(function () use ($user) {

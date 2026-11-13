@@ -1,47 +1,35 @@
-<nav class="navbar navbar-dark bg-dark px-3">
-    <a class="navbar-brand d-flex align-items-center"
-       href="{{ route('profile.show') }}">
-        <img src="{{ asset('images/logo.svg') }}"
-             alt="Logo"
-             height="28"
-             class="me-2">
-        {{ $appName }}
-    </a>
+<nav class="app-navbar">
+    <div class="app-navbar-inner">
+        <a class="app-brand" href="{{ route('profile.show') }}" aria-label="{{ $appName }} profile">
+            <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}">
+        </a>
 
-    @auth
-        <div class="d-flex align-items-center">
-            <div class="navbar-nav flex-row me-3">
-                <a class="nav-link px-2"
-                   href="{{ route('profile.department') }}">
+        @auth
+            <div class="app-navigation">
+                <a class="nav-link {{ request()->routeIs('profile.department') ? 'active' : '' }}" href="{{ route('profile.department') }}">
+                    <svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 20V8h6v12M8 11h.01M8 14h.01M16 11h.01M16 14h.01"/></svg>
                     My Department
-                </a>    
-                <a class="nav-link px-2"
-                   href="{{ route('profile.show', auth()->user()->employee->id) }}">
+                </a>
+                <a class="nav-link {{ request()->routeIs('profile.show', 'profile.edit') ? 'active' : '' }}" href="{{ route('profile.show', auth()->user()->employee->id) }}">
+                    <svg class="app-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>
                     My Profile
                 </a>
             </div>
 
-            <span class="text-light me-3">
-                {{ auth()->user()->name }}
-            </span>
+            <div class="app-user-area">
+                <span class="app-user-avatar" aria-hidden="true">
+                    <svg class="app-nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>
+                </span>
+                <span class="app-user-name">{{ auth()->user()->name }}</span>
+                <form action="{{ route('logout') }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-light">Sign out</button>
+                </form>
+            </div>
+        @endauth
 
-            <form action="{{ route('logout') }}"
-                  method="POST"
-                  class="d-inline">
-                @csrf
-                <button type="submit"
-                        class="btn btn-outline-light btn-sm">
-                    Logout
-                </button>
-            </form>
-        </div>
-    @endauth
-
-    @guest
-        <a href="{{ route('login') }}"
-           class="btn btn-outline-light btn-sm">
-            Login
-        </a>
-    @endguest
+        @guest
+            <a href="{{ route('login') }}" class="btn btn-sm btn-outline-light ms-auto">Sign in</a>
+        @endguest
+    </div>
 </nav>
-

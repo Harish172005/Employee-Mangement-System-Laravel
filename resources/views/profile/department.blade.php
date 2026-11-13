@@ -4,7 +4,7 @@
 
 @section('content')
     <x-card :title="$department['name']">
-        <dl class="row mb-0">
+        <dl class="row detail-list mb-0">
             <dt class="col-sm-3">Description</dt>
             <dd class="col-sm-9">{{ $department['description'] }}</dd>
 
@@ -20,7 +20,7 @@
 
     <x-card title="Department Employees">
         <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
                         <th>Employee Code</th>

@@ -8,31 +8,26 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
-<body class="bg-light">
+<body>
 
     @auth
         @if (auth()->user()?->role->value  === 'admin')
             @include('partials.admin-navbar')
         @elseif (auth()->user()?->role->value === 'employee')
             @include('partials.employee-navbar')
-        @else
-            <p>Unknown role</p>
         @endif
     @endauth
 
-    @guest
-    <p>User is not logged in</p>
-    <a href="{{ route('login') }}">Login</a>
-    @endguest
-    <div class="container-fluid">
-        <div class="row">
-            <main class="col-md-10 p-4">
-                @include('partials.alerts')
-                <h3 class="mb-3">@yield('heading')</h3>
-                @yield('content')
-            </main>
-        </div>
-    </div>
+    <main class="app-main">
+        @include('partials.alerts')
+        @hasSection('heading')
+            <header class="page-header">
+                <div class="page-eyebrow">{{ $appName }}</div>
+                <h1 class="page-title">@yield('heading')</h1>
+            </header>
+        @endif
+        @yield('content')
+    </main>
 
     @include('partials.footer')
     @include('partials.confirm-modal')

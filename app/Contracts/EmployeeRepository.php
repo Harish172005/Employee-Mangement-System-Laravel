@@ -9,7 +9,7 @@ interface EmployeeRepository
     public function getAllEmployees(): LengthAwarePaginator;  // Should return a LengthAwarePaginator
 
     public function getFilteredEmployees($filters = []): LengthAwarePaginator;  // Should return a LengthAwarePaginator 
-    public function createEmployee(array $data): Employee;  // Should return an Employee model instance
+    public function createEmployee(array $userData, array $employeeData): Employee;  // Should return an Employee model instance
     public function updateEmployee(Employee $employee, array $data): Employee;  // Should return an Employee model instance
 
     public function getEmployeeById($id): ?Employee;  // Should return an Employee model instance or null

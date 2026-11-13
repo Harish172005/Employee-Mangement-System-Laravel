@@ -2,29 +2,39 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Employee;
+
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
-use App\Models\Department;
-use Illuminate\Support\Facades\DB;
+use App\Services\ProfileService;
+
+
 
 class ProfileController extends Controller
 {
     // Dummy data. In Module 8 this becomes the logged-in employee: $request->user()->employee
 
+    public function __construct(protected ProfileService $profileService)
+    {
+    }
+
+    public function showAdmin()
+    {
+        return view('profile.admin-show', ['user' => auth()->user()]);
+    }
+
     public function show()
     {
-        $employee = auth()->user()->employee;
-        Gate::authorize('view', $employee);
 
-        $employee = Employee::findOrFail($employee->id);
+        $employee = $this->profileService->getOwnProfile();
+
+         Gate::authorize('view', $employee);
 
         return view('profile.show', compact('employee'));
     }
 
     public function edit()
     {
-        $employee = auth()->user()->employee;
+        $employee = $this->profileService->getOwnProfile();
         Gate::authorize('update', $employee);
 
         return view('profile.edit', compact('employee'));
@@ -32,36 +42,37 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $employee = auth()->user()->employee;
+
+        $employee = $this->profileService->updateOwnProfile($request->all());
         Gate::authorize('update', $employee);
         return redirect()->route('profile.show')->with('success', 'Profile updated successfullly');
     }
 
    public function department()
-    {
-        $department = auth()->user()->employee->department;
-        Gate::authorize('view', $department);   
-        $employee = Employee::where('email', auth()->user()->email)
-            ->firstOrFail();
+    {  
+  
+        $id = auth()->user()->employee->id;
+        $department = $this->profileService->getOwnDepartment();
 
-        $query = Department::withCount('employees')->findOrFail($employee->department_id);
+        Gate::authorize('view', $department); 
+
+        $departmentPayload = [
+            'name' => $department->name,
+            'description' => $department->description,
+            'employee_count' => $department->employees_count,
+            'status' => $department->status,
+        ];
         
-         $department = ['name' => $query->name, 
-        'description' => $query->description, 
-        'employee_count' => $query->employees_count, 
-        'status' => $query->status];
-
-        $query = Employee::where('department_id', $employee->department_id)
-            ->get();
-        $employees = $query->map(function ($employee) {
-            return [
-                'employee_code' => $employee->employee_code,
-                'full_name' => $employee->full_name,
-                'email' => $employee->email,
-                'status' => $employee->status,
-            ];
-        });
-        return view('profile.department', compact('department', 'employees'));
+            $employeesPayload = $department->employees->map(fn ($employee) => [
+            'employee_code' => $employee->employee_code,
+            'full_name' => $employee->full_name,
+            'email' => $employee->email,
+            'status' => $employee->status,
+        ]);
+       return view('profile.department', [
+            'department' => $departmentPayload,
+            'employees' => $employeesPayload,
+        ]);
     }
 
 
@@ -72,6 +83,25 @@ class ProfileController extends Controller
 
     public function updatePassword(Request $request)
     {
-        return redirect()->route('profile.show')->with('success', 'Password changed (placeholder)');
+         $validated = $request->validate([
+        'current_password' => ['required'],
+        'password' => [
+            'required',
+            'confirmed',
+            'min:8',
+        ],
+    ]);
+
+    $this->profileService->changePassword(
+        auth()->id(),
+        $validated['current_password'],
+        $validated['password']
+    );
+        
+        $profileRoute = auth()->user()->role->value === 'admin'
+            ? 'admin.profile.show'
+            : 'profile.show';
+
+        return redirect()->route($profileRoute)->with('success', 'Password updated successfully.');
     }
 }

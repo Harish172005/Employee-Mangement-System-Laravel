@@ -1,6 +1,3 @@
-// Live employee search and filters:
-// Sends search + all filter values to the JSON endpoint
-// and rebuilds only the table rows without reloading the page.
 
 const input = document.getElementById('employee-search');
 
@@ -33,18 +30,10 @@ if (input) {
         });
     });
 
-    // Prevent normal form submission
-    form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        search();
-    });
-
-
     async function search() {
         const formData = new FormData(form);
         const params = new URLSearchParams();
 
-        // Collect all filter values
         for (const [key, value] of formData.entries()) {
             if (value !== '') {
                 params.append(key, value);
@@ -68,21 +57,10 @@ if (input) {
 
             const json = await response.json();
 
-            // Expected response:
-            // {
-            //     status: true,
-            //     message: "...",
-            //     data: {
-            //         current_page: 1,
-            //         data: [ employees... ]
-            //     }
-            // }
-
             const employees = json.data?.data ?? [];
 
             renderRows(employees);
 
-            // Hide normal Laravel pagination while using AJAX
             pager?.classList.add('d-none');
 
         } catch (error) {
@@ -267,7 +245,6 @@ if (input) {
 
             else {
 
-                // View
                 if (employee.urls?.show) {
                     actions.append(
                         actionLink(
@@ -277,7 +254,6 @@ if (input) {
                         )
                     );
                 }
-
 
                 // Edit
                 if (employee.urls?.edit) {

@@ -3,8 +3,8 @@
 @section('heading', 'Departments')
 
 @section('content')
-    <div class="d-flex justify-content-between mb-3">
-        <form method="GET" class="d-flex gap-2">
+    <div class="filter-panel d-flex flex-wrap align-items-start gap-3 justify-content-between mb-3">
+        <form method="GET" class="department-filters">
             <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" class="form-control" placeholder="Search departments...">
             <select name="status" class="form-select">
                 <option value="">Any status</option>
@@ -21,13 +21,14 @@
                 <option value="active" @selected(($filters['employee_status'] ?? '') === 'active')>Has active employees</option>
                 <option value="inactive" @selected(($filters['employee_status'] ?? '') === 'inactive')>Has inactive employees</option>
             </select>
-            <button class="btn btn-outline-secondary">Search</button>
+            <button class="btn btn-outline-primary">Search</button>
         </form>
-        <a href="{{ route('admin.departments.create') }}" class="btn btn-primary">Add Department</a>
+        <a href="{{ route('admin.departments.create') }}" class="btn btn-primary align-self-start text-nowrap">Add Department</a>
     </div>
 
     <x-card>
-        <table class="table table-striped mb-0">
+        <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr><th>#</th><th>Name</th><th>Description</th><th>Status</th><th>Actions</th></tr>
             </thead>
@@ -38,7 +39,7 @@
                         <td>{{ $department->name }}</td>
                         <td>{{ $department->description }}</td>
                         <td><x-status-badge :status="$department->status" /></td>
-                        <td>
+                        <td class="table-actions">
                             <span class="me-2">{{ $department->employees_count }} employees</span>
                             <a href="{{ route('admin.departments.show', $department) }}" class="btn btn-sm btn-info">View</a>
                             <a href="{{ route('admin.departments.edit', $department) }}" class="btn btn-sm btn-warning">Edit</a>
@@ -57,6 +58,7 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
     </x-card>
     {{ $departments->links() }}
 @endsection
