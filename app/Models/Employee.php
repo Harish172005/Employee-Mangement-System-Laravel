@@ -4,13 +4,14 @@ namespace App\Models;
 
 use App\Enums\Gender;
 use App\Enums\Status;
-use App\Scopes\ActiveEmployeeScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\Storage;
 
 class Employee extends Model
 {
@@ -53,14 +54,21 @@ class Employee extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new ActiveEmployeeScope());
+      //
     }
 
-    protected function fullName(): \Illuminate\Database\Eloquent\Casts\Attribute
+    protected function fullName(): Attribute
     {
-        return \Illuminate\Database\Eloquent\Casts\Attribute::get(
+        return Attribute::get(
             fn (): string => trim("{$this->first_name} {$this->last_name}")
         );
+    }
+
+    protected function photoUrl(): Attribute
+    {
+        return Attribute::get(fn () => $this->profile_photo
+            ? Storage::disk('public')->url($this->profile_photo)
+            : asset('images/avatar.svg'));
     }
 
     public function scopeActive($query)

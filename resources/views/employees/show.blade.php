@@ -4,6 +4,8 @@
 
 @section('content')
     <x-card :title="$employee->full_name">
+        <img src="{{ $employee->photo_url }}" alt="{{ $employee->full_name }}"
+     class="rounded-circle border" width="120" height="120" style="object-fit: cover;">
         <dl class="row mb-0">
             <dt class="col-sm-3">Employee Code</dt><dd class="col-sm-9">{{ $employee->employee_code }}</dd>
             <dt class="col-sm-3">Email</dt><dd class="col-sm-9">{{ $employee->email }}</dd>

@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 @section('title', 'Employees')
 @section('heading', 'Employees')
@@ -62,7 +63,7 @@
                             <td>{{ $employee->department?->name ?? '-' }}</td>
                             <td><x-status-badge :status="$employee->status" /></td>
                             <td>
-                                @if ($employee->trashed())
+                                @if ($employee->trashed() && $employee->status === \App\Enums\Status::Inactive)
                                     <form action="{{ route('admin.employees.restore', $employee) }}" method="POST" class="d-inline">
                                         @csrf
                                         <button class="btn btn-sm btn-success">Restore</button>

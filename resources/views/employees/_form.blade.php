@@ -23,6 +23,10 @@
                        :selected="old('status', $employee?->status?->value ?? 'active')" />
     </div>
     <div class="col-md-6">
+       @if ($employee)
+    <img src="{{ $employee->photo_url }}" alt="{{ $employee->full_name }}"
+         class="rounded-circle border mb-2 d-block" width="120" height="120" style="object-fit: cover;">
+        @endif
         <x-form.input name="profile_photo" label="Profile Photo (jpg or png, max 2 MB)" type="file"
                       accept=".jpg,.jpeg,.png" data-validate="file" data-types="jpg,jpeg,png" data-max-kb="2048" />
     </div>
