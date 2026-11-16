@@ -22,10 +22,7 @@
         </table>
     </x-card>
 
-    {{-- @while example (remove later) --}}
-    @php($n = 1)
-    @while ($n <= 3)
-        <span class="badge bg-light text-dark border">Step {{ $n }}</span>
-        @php($n++)
-    @endwhile
+    <x-card title="Total Salary">
+        <div class="fs-4 fw-bold">{{ number_format((float) $totalSalary, 2) }}</div>
+    </x-card>
 @endsection

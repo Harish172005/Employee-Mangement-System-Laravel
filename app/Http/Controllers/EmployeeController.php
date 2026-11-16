@@ -2,83 +2,47 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Gender;
+use App\Enums\Role;
+use App\Enums\Status;
+use App\Models\Department;
+use App\Models\Employee;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
-    // ---- Dummy data. Replaced by Eloquent in Module 6 (then use Employee $employee binding). ----
-
-    /** 25 fake employees so pagination and search have something to work with. */
-    private function allEmployees(): array
-    {
-        $names = ['John Doe', 'Asha Rani', 'Ravi Kumar', 'Meena Devi', 'Karthik Raja',
-                  'Priya Nair', 'Arun Prakash', 'Divya Shree', 'Vikram Singh', 'Lakshmi Iyer'];
-        $departments = ['IT', 'HR', 'Finance', 'Sales', 'Operations'];
-
-        $list = [];
-        for ($i = 1; $i <= 25; $i++) {
-            $list[] = [
-                'id'         => $i,
-                'code'       => sprintf('EMP%03d', $i),
-                'name'       => $names[($i - 1) % count($names)],
-                'department' => $departments[$i % count($departments)],
-                'status'     => $i % 7 === 0 ? 'inactive' : 'active',
-            ];
-        }
-
-        return $list;
-    }
-
-    /** Keep employees whose name, code or department contains the search text. */
-    private function filtered(?string $search): array
-    {
-        $employees = $this->allEmployees();
-
-        if ($search === null || $search === '') {
-            return $employees;
-        }
-
-        return array_values(array_filter($employees, function ($employee) use ($search) {
-            return stripos($employee['name'], $search) !== false
-                || stripos($employee['code'], $search) !== false
-                || stripos($employee['department'], $search) !== false;
-        }));
-    }
-
-    private function sample(int|string $id): array
-    {
-        return [
-            'id' => $id, 'code' => 'EMP' . str_pad((string) $id, 3, '0', STR_PAD_LEFT),
-            'first_name' => 'John', 'last_name' => 'Doe',
-            'email' => 'john@example.com', 'phone' => '9876543210',
-            'date_of_birth' => '1998-05-14', 'date_of_joining' => '2024-06-01',
-            'gender' => 'male', 'department_id' => 1,
-            'designation' => 'Developer', 'salary' => 45000,
-            'address' => 'Salem, Tamil Nadu', 'status' => 'active',
-        ];
-    }
-
-    // ---- Resource actions ----
-
     public function index(Request $request)
     {
-        $search  = $request->query('q');
-        $items   = $this->filtered($search);
-        $perPage = 10;
-        $page    = LengthAwarePaginator::resolveCurrentPage();
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'department' => ['nullable', 'integer', 'exists:departments,id'],
+            'status' => ['nullable', Rule::enum(Status::class)],
+            'gender' => ['nullable', Rule::enum(Gender::class)],
+            'sort' => ['nullable', Rule::in(['employee_code', 'first_name', 'last_name', 'salary', 'date_of_joining', 'created_at'])],
+            'direction' => ['nullable', Rule::in(['asc', 'desc'])],
+            'with_trashed' => ['nullable', 'boolean'],
+        ]);
 
-        // Real paginator object, so $employees->links() renders Bootstrap pagination.
-        // In Module 6 this becomes: Employee::search($search)->paginate(10)
-        $employees = new LengthAwarePaginator(
-            array_slice($items, ($page - 1) * $perPage, $perPage),
-            count($items),
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
+        $query = Employee::withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class)
+            ->with(['department', 'user'])
+            ->search($filters['q'] ?? null)
+            ->when(isset($filters['department']), fn ($query) => $query->where('department_id', $filters['department']))
+            ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
+            ->when(isset($filters['gender']), fn ($query) => $query->where('gender', $filters['gender']));
 
-        return view('employees.index', compact('employees', 'search'));
+        if ($request->boolean('with_trashed')) {
+            $query->withTrashed();
+        }
+
+        $sort = $filters['sort'] ?? 'last_name';
+        $employees = $query->orderBy($sort, $filters['direction'] ?? 'asc')
+            ->orderBy('first_name')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('employees.index', compact('employees', 'filters'));
     }
 
     public function create()
@@ -88,70 +52,140 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->only('first_name', 'last_name', 'email');   // Request object demo
+        $data = $this->validatedData($request);
+        $data['employee_code'] = 'EMP' . str_pad((string) ($this->employeeQuery()->withTrashed()->max('id') + 1), 4, '0', STR_PAD_LEFT);
+        $data['profile_photo'] = $request->file('profile_photo')?->store('employee-photos', 'public');
+        Employee::create($data);
 
-        return redirect()->route('admin.employees.index')
-            ->with('success', 'Employee created (placeholder)');
+        return redirect()->route('admin.employees.index')->with('success', 'Employee created successfully.');
     }
 
-    public function show($id)
+    public function show(int $id)
     {
-        $employee = $this->sample($id);
+        $employee = $this->employeeQuery()->findOrFail($id);
+        $employee->load(['department', 'skills', 'activityLogs']);
 
         return view('employees.show', compact('employee'));
     }
 
-    public function edit($id)
+    public function edit(int $id)
     {
-        $employee = $this->sample($id);
+        $employee = $this->employeeQuery()->findOrFail($id);
 
         return view('employees.edit', compact('employee'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
-        return redirect()->route('admin.employees.show', $id)
-            ->with('success', 'Employee updated (placeholder)');
+        $employee = $this->employeeQuery()->findOrFail($id);
+        $data = $this->validatedData($request, $employee);
+
+        if ($request->hasFile('profile_photo')) {
+            if ($employee->profile_photo) {
+                Storage::disk('public')->delete($employee->profile_photo);
+            }
+            $data['profile_photo'] = $request->file('profile_photo')->store('employee-photos', 'public');
+        }
+
+        $employee->fill($data);
+        $employee->save();
+
+        return redirect()->route('admin.employees.show', $employee)->with('success', 'Employee updated successfully.');
     }
 
-    public function destroy($id)
+    public function destroy(int $id)
     {
-        return redirect()->route('admin.employees.index')
-            ->with('success', 'Employee deactivated (placeholder)');
+        $this->employeeQuery()->findOrFail($id)->delete();
+
+        return redirect()->route('admin.employees.index')->with('success', 'Employee deactivated successfully.');
     }
 
-    // ---- JSON endpoint used by the live search (resources/js/employee-search.js) ----
+    public function restore(int $id)
+    {
+        $employee = $this->employeeQuery()->withTrashed()->find($id);
+        abort_if($employee === null, 404);
+        abort_unless($employee->trashed(), 404);
+        $employee->restore();
+
+        return redirect()->route('admin.employees.index', ['with_trashed' => 1])->with('success', 'Employee restored successfully.');
+    }
+
+    public function forceDelete(int $id)
+    {
+        abort_unless(auth()->check() && auth()->user()->role === Role::Admin, 403);
+
+        $employee = $this->employeeQuery()->withTrashed()->findOrFail($id);
+        abort_unless($employee->trashed(), 404);
+        $employee->forceDelete();
+
+        return redirect()->route('admin.employees.index', ['with_trashed' => 1])->with('success', 'Employee permanently deleted.');
+    }
 
     public function search(Request $request)
     {
-        $results = array_slice($this->filtered($request->query('q')), 0, 10);
-
-        $data = array_map(function ($employee) {
-            $employee['urls'] = [
-                'show'    => route('admin.employees.show', $employee['id']),
-                'edit'    => route('admin.employees.edit', $employee['id']),
-                'destroy' => route('admin.employees.destroy', $employee['id']),
-            ];
-
-            return $employee;
-        }, $results);
+        $query = $request->validate(['q' => ['nullable', 'string', 'max:100']])['q'] ?? null;
+        $employees = $this->employeeQuery()->with('department')->search($query)
+            ->orderBy('last_name')->limit(10)->get()
+            ->map(fn ($employee) => [
+                'id' => $employee->id,
+                'code' => $employee->employee_code,
+                'name' => $employee->full_name,
+                'department' => $employee->department?->name,
+                'status' => $employee->status->value,
+                'urls' => [
+                    'show' => route('admin.employees.show', $employee),
+                    'edit' => route('admin.employees.edit', $employee),
+                    'destroy' => route('admin.employees.destroy', $employee),
+                ],
+            ]);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Employees retrieved successfully',
-            'data'    => $data,
+            'data' => $employees,
         ]);
     }
 
-    // ---- File download example ----
-
     public function export()
     {
-        $csv = "id,name\n1,Test Employee\n";
+        $employees = $this->employeeQuery()->with('department')->orderBy('last_name')->get();
+        $csv = "Code,Name,Email,Department,Status\n";
+        foreach ($employees as $employee) {
+            $csv .= implode(',', array_map(
+                fn ($value) => '"' . str_replace('"', '""', (string) $value) . '"',
+                [$employee->employee_code, $employee->full_name, $employee->email, $employee->department?->name, $employee->status->value]
+            )) . "\n";
+        }
 
         return response($csv, 200, [
-            'Content-Type'        => 'text/csv',
+            'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="employees.csv"',
+        ]);
+    }
+
+    private function employeeQuery()
+    {
+        return Employee::withoutGlobalScope(\App\Scopes\ActiveEmployeeScope::class);
+    }
+
+    private function validatedData(Request $request, ?Employee $employee = null): array
+    {
+        $id = $employee?->id;
+
+        return $request->validate([
+            'first_name' => ['required', 'string', 'max:50'],
+            'last_name' => ['required', 'string', 'max:50'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('employees', 'email')->ignore($id)],
+            'phone' => ['required', 'string', 'max:10'],
+            'date_of_birth' => ['required', 'date'],
+            'date_of_joining' => ['required', 'date'],
+            'gender' => ['required', Rule::enum(Gender::class)],
+            'department_id' => ['required', 'exists:departments,id'],
+            'designation' => ['required', 'string', 'max:100'],
+            'salary' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            'address' => ['nullable', 'string', 'max:5000'],
+            'status' => ['required', Rule::enum(Status::class)],
+            'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
     }
 }

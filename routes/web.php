@@ -18,6 +18,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // Custom routes MUST come before the resource, or {employee} swallows them
     Route::get('employees/search', [EmployeeController::class, 'search'])->name('employees.search');
     Route::get('employees/export', [EmployeeController::class, 'export'])->name('employees.export');
+    Route::post('employees/{employee}/restore', [EmployeeController::class, 'restore'])->whereNumber('employee')->name('employees.restore');
+    Route::delete('employees/{employee}/force-delete', [EmployeeController::class, 'forceDelete'])
+        ->whereNumber('employee')->middleware('auth')->name('employees.force-delete');
 
     Route::resource('employees', EmployeeController::class)->whereNumber('employee');
     Route::resource('departments', DepartmentController::class)->whereNumber('department');

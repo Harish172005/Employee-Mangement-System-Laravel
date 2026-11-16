@@ -4,7 +4,7 @@
 
 @section('content')
     <x-card>
-        <form method="POST" data-validate-form action="{{ route('admin.departments.update', $department['id']) }}">
+        <form method="POST" data-validate-form action="{{ route('admin.departments.update', $department) }}">
             @csrf
             @method('PUT')
             @include('departments._form', ['department' => $department])

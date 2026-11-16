@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Status;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -11,16 +13,34 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    // Placeholder. Real authentication (Auth::attempt) comes in Module 8.
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');   // Request object demo
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
 
-        return redirect()->route('dashboard')->with('success', 'Logged in (placeholder)');
+        if (! Auth::attempt($credentials)) {
+            return back()->withErrors(['email' => 'These credentials do not match our records.'])->onlyInput('email');
+        }
+
+        if (Auth::user()->status !== Status::Active) {
+            Auth::logout();
+
+            return back()->withErrors(['email' => 'This account is inactive.'])->onlyInput('email');
+        }
+
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('dashboard'))->with('success', 'Logged in successfully.');
     }
 
     public function logout(Request $request)
     {
-        return redirect()->route('login')->with('success', 'Logged out (placeholder)');
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->with('success', 'Logged out successfully.');
     }
 }
