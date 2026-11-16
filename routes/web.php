@@ -50,6 +50,18 @@ Route::controller(AuthController::class)->group(function () {
     Route::post('/logout', 'logout')->middleware('auth')->name('logout');
 });
 
+Route::get('/language/{locale}', function (string $locale) {
+
+    if (! in_array($locale, ['en', 'ta'])) {
+        abort(404);
+    }
+
+    session(['locale' => $locale]);
+
+    return redirect()->back();
+
+})->name('language.switch');
+
 
 
 
