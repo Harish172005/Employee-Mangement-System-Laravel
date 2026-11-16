@@ -34,6 +34,7 @@ return [
     |            "failover", "roundrobin"
     |
     */
+    'report_to' => env('MAIL_REPORT_TO'),
 
     'mailers' => [
 

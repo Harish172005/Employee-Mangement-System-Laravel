@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
+use App\Jobs\SendEmployeeWelcomeEmail;
+ use App\Events\EmployeeStatusChanged;
+ use App\Notifications\EmployeeUpdatedNotification;
+
 
 class EmployeeService
 {
@@ -21,11 +26,16 @@ class EmployeeService
     ) {
     }
 
-    public function getAllEmployees()
+    public function getAllEmployees(): LengthAwarePaginator
     {
-        return $this->employeeRepository->getAllEmployees();
-    }
+        $page = request()->get('page', 1);
 
+        return Cache::remember(
+            "employees.page.{$page}",
+            now()->addMinutes(15),
+            fn () => $this->employeeRepository->getAllEmployees()
+        );
+    }
     public function getFilteredEmployees(array $filters = []) : LengthAwarePaginator
     {
         return $this->employeeRepository->getFilteredEmployees($filters);
@@ -41,7 +51,7 @@ public function createEmployee(array $data, $profilePhoto = null): Employee
     $path = null;
 
     try {
-        return DB::transaction(function () use ($data, $profilePhoto, &$path) {
+        $employee = DB::transaction(function () use ($data, $profilePhoto, &$path) {
 
             // Upload profile photo
             if ($profilePhoto) {
@@ -78,7 +88,7 @@ public function createEmployee(array $data, $profilePhoto = null): Employee
                 'employee_code' => $employeeCode,
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
-                'email' => $data['email'],  
+                'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'date_of_joining' => $data['date_of_joining'],
@@ -96,6 +106,14 @@ public function createEmployee(array $data, $profilePhoto = null): Employee
                 $employeeData
             );
         });
+
+        // Transaction has successfully committed here
+        Cache::forget('employees.all');
+
+        // Add welcome email job to the queue
+        SendEmployeeWelcomeEmail::dispatch($employee);
+
+        return $employee;
 
     } catch (\Throwable $e) {
 
@@ -115,61 +133,91 @@ public function createEmployee(array $data, $profilePhoto = null): Employee
 }
 
 
-    public function updateEmployee($id, array $data, $profilePhoto = null)
-    {
-        $employee = $this->employeeRepository->getEmployeeById($id);
+public function updateEmployee($id, array $data, $profilePhoto = null)
+{
+    $employee = $this->employeeRepository->getEmployeeById($id);
 
-        if (!$employee) {
-            throw new ServiceException('Employee not found.');
+    if (!$employee) {
+        throw new ServiceException('Employee not found.');
+    }
+
+    // Capture old status before update
+    $oldStatus = $employee->status;
+
+    $oldPhoto = $employee->profile_photo;
+    $newPhoto = null;
+
+    try {
+        if ($profilePhoto) {
+            $newPhoto = $profilePhoto->store(
+                self::PHOTO_DIR,
+                self::PHOTO_DISK
+            );
+
+            $data['profile_photo'] = $newPhoto;
         }
 
-        $oldPhoto = $employee->profile_photo;
-        $newPhoto = null;
+        $updated = $this->employeeRepository
+            ->updateEmployee($employee, $data);
 
-        try {
-            if ($profilePhoto) {
-                $newPhoto = $profilePhoto->store(
-                    self::PHOTO_DIR,
-                    self::PHOTO_DISK
-                );
+        // Dispatch event only if status was actually changed
+        if (
+            isset($data['status']) &&
+            $oldStatus !== $updated->status
+        ) {
+            event(new EmployeeStatusChanged(
+                $updated,
+                $oldStatus,
+                $updated->status
+            ));
+        }
 
-                $data['profile_photo'] = $newPhoto;
-            }
-
-            $updated = $this->employeeRepository
-                ->updateEmployee($employee, $data);
-
-            // Delete the old photo only after successful DB update
-            if ($newPhoto && $oldPhoto) {
-                Storage::disk(self::PHOTO_DISK)
-                    ->delete($oldPhoto);
-            }
-
-            return $updated;
-
-        } catch (\Throwable $e) {
-
-            // Remove newly uploaded photo if update failed
-            if ($newPhoto) {
-                Storage::disk(self::PHOTO_DISK)
-                    ->delete($newPhoto);
-            }
-
-            Log::error('Employee update failed.', [
-                'employee_id' => $employee->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            throw new ServiceException(
-                'Could not update the employee.',
-                $e
+        if ($updated->user) {
+            $updated->user->notify(
+                new EmployeeUpdatedNotification(
+                    $updated,
+                    'Your employee profile has been updated by the administrator.'
+                )
             );
         }
+
+        // Delete the old photo only after successful DB update
+        if ($newPhoto && $oldPhoto) {
+            Storage::disk(self::PHOTO_DISK)
+                ->delete($oldPhoto);
+        }
+
+        Cache::forget('employees.all');
+
+        return $updated;
+
+    } catch (\Throwable $e) {
+
+        // Remove newly uploaded photo if update failed
+        if ($newPhoto) {
+            Storage::disk(self::PHOTO_DISK)
+                ->delete($newPhoto);
+        }
+
+        Log::error('Employee update failed.', [
+            'employee_id' => $employee->id,
+            'error' => $e->getMessage(),
+        ]);
+
+        throw new ServiceException(
+            'Could not update the employee.',
+            $e
+        );
     }
+}
 
     public function deleteEmployee($id)
     {
-        return $this->employeeRepository->deleteEmployee($id);
+        $deleted = $this->employeeRepository->deleteEmployee($id);
+
+        Cache::forget('employees.all');
+
+        return $deleted;
     }
 
     public function restoreEmployee($id)
@@ -177,6 +225,8 @@ public function createEmployee(array $data, $profilePhoto = null): Employee
         $employee = $this->getEmployeeById($id);
 
         abort_unless($employee?->trashed(), 404);
+
+        Cache::forget('employees.all');
 
         return $this->employeeRepository->restoreEmployee($employee);
     }

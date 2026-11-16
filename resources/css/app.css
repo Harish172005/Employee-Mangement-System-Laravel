@@ -1507,3 +1507,44 @@ a {
         padding: 3rem 1.25rem;
     }
 }
+
+.language-switcher {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 20px;
+}
+
+.language-label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.language-options {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 8px;
+    background: #f1f3f5;
+}
+
+.language-option {
+    padding: 7px 12px;
+    text-decoration: none;
+    color: #495057;
+    font-size: 14px;
+    border-radius: 6px;
+    transition: 0.2s ease;
+}
+
+.language-option:hover {
+    background: #e9ecef;
+}
+
+.language-option.active {
+    background: #ffffff;
+    color: #000000;
+    font-weight: 600;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}

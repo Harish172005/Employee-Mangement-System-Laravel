@@ -70,9 +70,16 @@ class AuthController extends Controller
             $request->only('email')
         );
 
-        return $status === PasswordBroker::RESET_LINK_SENT
-                    ? back()->with(['status' => __($status)])
-                    : back()->withErrors(['email' => __($status)]);
+       return $status === PasswordBroker::RESET_LINK_SENT
+        ? back()->with([
+            'status' => __($status),
+            'message' => 'Password reset link sent successfully.',
+        ])
+        : back()->withErrors([
+            'email' => __($status),
+        ])->with([
+            'message' => 'Unable to send the password reset link.',
+        ]);
     }
 
     public function showResetForm(Request $request, $token = null)

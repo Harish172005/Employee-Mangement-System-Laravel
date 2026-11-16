@@ -9,7 +9,7 @@ use App\Enums\Status;
 use App\Rules\MinimumAge;
 use Illuminate\Validation\Rule;
 use App\Enums\Role;
-class EmployeeRequest extends FormRequest
+class EmployeeCreateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

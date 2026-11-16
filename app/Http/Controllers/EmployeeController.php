@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Role;
 use App\Enums\Status;
-use App\Http\Requests\EmployeeRequest;
+use App\Http\Requests\EmployeeCreateRequest;
+use App\Http\Requests\EmployeeEditRequest;
 use App\Models\Employee;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use App\Services\EmployeeService;
 use App\Http\Requests\EmployeeFilterRequest;
@@ -64,12 +62,10 @@ class EmployeeController extends Controller
 
     public function create()
     {
-        return view('employees.create', [
-            'availableUsers' => $this->availableUsers(),
-        ]);
+        return view('employees.create');
     }
 
-    public function store(EmployeeRequest $request)
+    public function store(EmployeeCreateRequest $request)
     {
         $data = $request->validated();
         unset($data['profile_photo']);
@@ -116,17 +112,27 @@ class EmployeeController extends Controller
     {
         Gate::authorize('update', Employee::class);
         $employee = $this->employeeService->getEmployeeById($id);
-        $availableUsers = $this->availableUsers($employee); 
 
-        return view('employees.edit',compact('employee', 'availableUsers' ));
+        return view('employees.edit',compact('employee'));
     }
 
-    public function update(EmployeeRequest $request, Employee $employee)
+    public function update(EmployeeEditRequest $request, Employee $employee)
     {
         $data = $request->validated();
+
+        $profilePhoto = $request->file('profile_photo');
+
         unset($data['profile_photo']);
 
-        return redirect()->route('admin.employees.show', $employee)->with('success', 'Employee updated.');
+        $this->employeeService->updateEmployee(
+            $employee->id,
+            $data,
+            $profilePhoto
+        );
+
+        return redirect()
+            ->route('admin.employees.show', $employee)
+            ->with('success', 'Employee updated successfully.');
     }
 
      public function destroy(Employee $employee)
