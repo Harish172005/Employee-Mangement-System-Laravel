@@ -1,10 +1,10 @@
 @extends('layouts.guest')
 
-@section('title', 'Reset Password')
+@section('title', __('messages.reset_password'))
 
 @section('content')
-            <x-card title="Create a new password">
-                <p class="text-secondary mb-4">Choose a secure password to regain access to your account.</p>
+            <x-card :title="__('messages.create_new_password')">
+                <p class="text-secondary mb-4">{{ __('messages.choose_secure_password') }}</p>
 
                 <form method="POST" action="{{ route('password.store') }}">
                     @csrf
@@ -16,7 +16,7 @@
                     >
 
                     <div class="mb-3">
-                        <label for="reset-email" class="form-label">Email</label>
+                        <label for="reset-email" class="form-label">{{ __('messages.email') }}</label>
 
                         <input
                             id="reset-email"
@@ -36,7 +36,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="reset-password" class="form-label">New password</label>
+                        <label for="reset-password" class="form-label">{{ __('messages.new_password') }}</label>
 
                         <input
                             id="reset-password"
@@ -67,7 +67,7 @@
                         >
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">Reset password</button>
+                    <button type="submit" class="btn btn-primary w-100">{{ __('messages.reset_password') }}</button>
 
                 </form>
             </x-card>

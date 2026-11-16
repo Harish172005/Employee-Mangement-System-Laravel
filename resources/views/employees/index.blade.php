@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Employees')
-@section('heading', 'Employees')
+@section('title', __('messages.employees'))
+@section('heading', __('messages.employees'))
 
 @section('content')
 
@@ -17,12 +17,12 @@
                    name="q"
                    value="{{ $filters['q'] ?? '' }}"
                    class="form-control employee-search-field"
-                   placeholder="Search name, email or code..."
+                   placeholder="{{ __('messages.search_employee_name_email_code') }}"
                    autocomplete="off"
                    data-search-url="{{ route('admin.employees.search') }}">
 
             <select name="department" class="form-select">
-                <option value="">All departments</option>
+                <option value="">{{ __('messages.all_departments') }}</option>
 
                 @foreach ($departments as $id => $name)
                     <option value="{{ $id }}"
@@ -34,36 +34,36 @@
 
             {{-- Status --}}
             <select name="status" class="form-select">
-                <option value="">All statuses</option>
+                <option value="">{{ __('messages.all_statuses') }}</option>
 
                 <option value="active"
                     @selected(($filters['status'] ?? '') === 'active')}>
-                    Active
+                    {{ __('messages.active') }}
                 </option>
 
                 <option value="inactive"
                     @selected(($filters['status'] ?? '') === 'inactive')}>
-                    Inactive
+                    {{ __('messages.inactive') }}
                 </option>
             </select>
 
             {{-- Gender --}}
             <select name="gender" class="form-select">
-                <option value="">All genders</option>
+                <option value="">{{ __('messages.all_genders') }}</option>
 
                 <option value="male"
                     @selected(($filters['gender'] ?? '') === 'male')}>
-                    Male
+                    {{ __('messages.male') }}
                 </option>
 
                 <option value="female"
                     @selected(($filters['gender'] ?? '') === 'female')}>
-                    Female
+                    {{ __('messages.female') }}
                 </option>
 
                 <option value="other"
                     @selected(($filters['gender'] ?? '') === 'other')}>
-                    Other
+                    {{ __('messages.other') }}
                 </option>
             </select>
 
@@ -72,27 +72,27 @@
 
                 <option value="last_name"
                     @selected(($filters['sort'] ?? '') === 'last_name')}>
-                    Sort: Last name
+                    {{ __('messages.sort_last_name') }}
                 </option>
 
                 <option value="employee_code"
                     @selected(($filters['sort'] ?? '') === 'employee_code')}>
-                    Sort: Code
+                    {{ __('messages.sort_code') }}
                 </option>
 
                 <option value="first_name"
                     @selected(($filters['sort'] ?? '') === 'first_name')}>
-                    Sort: First name
+                    {{ __('messages.sort_first_name') }}
                 </option>
 
                 <option value="salary"
                     @selected(($filters['sort'] ?? '') === 'salary')}>
-                    Sort: Salary
+                    {{ __('messages.sort_salary') }}
                 </option>
 
                 <option value="date_of_joining"
                     @selected(($filters['sort'] ?? '') === 'date_of_joining')}>
-                    Sort: Joining date
+                    {{ __('messages.sort_joining_date') }}
                 </option>
 
             </select>
@@ -101,12 +101,12 @@
 
                 <option value="asc"
                     @selected(($filters['direction'] ?? 'asc') === 'asc')}>
-                    Ascending
+                    {{ __('messages.ascending') }}
                 </option>
 
                 <option value="desc"
                     @selected(($filters['direction'] ?? '') === 'desc')}>
-                    Descending
+                    {{ __('messages.descending') }}
                 </option>
 
             </select>
@@ -120,7 +120,7 @@
                        @checked(request()->boolean('with_trashed'))>
 
                 <span class="form-check-label">
-                    Include deactivated records
+                    {{ __('messages.include_deactivated_records') }}
                 </span>
 
             </label>
@@ -129,7 +129,7 @@
 
         <a href="{{ route('admin.employees.create') }}"
            class="btn btn-primary align-self-start text-nowrap">
-            Add Employee
+            {{ __('messages.add_employee') }}
         </a>
 
     </div>
@@ -139,7 +139,7 @@
 
         <a href="{{ route('admin.employees.export') }}"
            class="btn btn-sm btn-outline-primary">
-            Export CSV
+            {{ __('messages.export_csv') }}
         </a>
 
     </div>
@@ -154,11 +154,11 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Code</th>
-                        <th>Name</th>
-                        <th>Department</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th>{{ __('messages.code') }}</th>
+                        <th>{{ __('messages.name') }}</th>
+                        <th>{{ __('messages.department') }}</th>
+                        <th>{{ __('messages.status') }}</th>
+                        <th>{{ __('messages.actions') }}</th>
                     </tr>
                 </thead>
 
@@ -204,7 +204,7 @@
                                         @csrf
 
                                         <button class="btn btn-sm btn-success">
-                                            Restore
+                                            {{ __('messages.restore') }}
                                         </button>
 
                                     </form>
@@ -213,13 +213,13 @@
                                         action="{{ route('admin.employees.force-delete', $employee) }}"
                                         method="POST"
                                         class="d-inline"
-                                        data-confirm="Permanently delete this employee? This cannot be undone.">
+                                        data-confirm="{{ __('messages.permanently_delete_employee_confirm') }}">
 
                                         @csrf
                                         @method('DELETE')
 
                                         <button class="btn btn-sm btn-outline-danger">
-                                            Force delete
+                                            {{ __('messages.force_delete') }}
                                         </button>
 
                                     </form>
@@ -229,13 +229,13 @@
                                     <a
                                         href="{{ route('admin.employees.show', $employee) }}"
                                         class="btn btn-sm btn-info">
-                                        View
+                                        {{ __('messages.view') }}
                                     </a>
 
                                     <a
                                         href="{{ route('admin.employees.edit', $employee) }}"
                                         class="btn btn-sm btn-warning">
-                                        Edit
+                                        {{ __('messages.edit') }}
                                     </a>
 
 
@@ -244,13 +244,13 @@
                                         action="{{ route('admin.employees.destroy', $employee) }}"
                                         method="POST"
                                         class="d-inline"
-                                        data-confirm="Deactivate this employee?">
+                                        data-confirm="{{ __('messages.deactivate_employee_confirm') }}">
 
                                         @csrf
                                         @method('DELETE')
 
                                         <button class="btn btn-sm btn-danger">
-                                            Deactivate
+                                            {{ __('messages.deactivate') }}
                                         </button>
 
                                     </form>
@@ -265,7 +265,7 @@
 
                         <tr>
                             <td colspan="6" class="text-center">
-                                No employees found.
+                                {{ __('messages.no_employees_found') }}
                             </td>
                         </tr>
 

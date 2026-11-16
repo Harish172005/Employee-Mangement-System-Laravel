@@ -3,13 +3,13 @@
 <div class="row g-2">
 
     <div class="col-12">
-        <h2 class="form-section-heading">Employee Details</h2>
+        <h2 class="form-section-heading">{{ __('messages.employee_details_section') }}</h2>
     </div>
 
     <div class="col-md-6">
         <x-form.input
             name="first_name"
-            label="First Name"
+            :label="__('messages.first_name')"
             data-validate="required"
             :value="old('first_name', $employee->first_name)"
         />
@@ -18,7 +18,7 @@
     <div class="col-md-6">
         <x-form.input
             name="last_name"
-            label="Last Name"
+            :label="__('messages.last_name')"
             data-validate="required"
             :value="old('last_name', $employee->last_name)"
         />
@@ -27,7 +27,7 @@
     <div class="col-md-6">
         <x-form.input
             name="phone"
-            label="Phone"
+            :label="__('messages.phone')"
             :value="old('phone', $employee->phone)"
         />
     </div>
@@ -35,7 +35,7 @@
     <div class="col-md-6">
         <x-form.input
             name="date_of_birth"
-            label="Date of Birth"
+            :label="__('messages.date_of_birth')"
             type="date"
             :value="old(
                 'date_of_birth',
@@ -47,7 +47,7 @@
     <div class="col-md-6">
         <x-form.input
             name="date_of_joining"
-            label="Date of Joining"
+            :label="__('messages.date_of_joining')"
             type="date"
             :value="old(
                 'date_of_joining',
@@ -59,12 +59,12 @@
     <div class="col-md-6">
         <x-form.select
             name="gender"
-            label="Gender"
+            :label="__('messages.gender')"
             data-validate="required"
             :options="[
-                'male' => 'Male',
-                'female' => 'Female',
-                'other' => 'Other'
+                'male' => __('messages.male'),
+                'female' => __('messages.female'),
+                'other' => __('messages.other')
             ]"
             :selected="old('gender', $employee->gender?->value)"
         />
@@ -73,7 +73,7 @@
     <div class="col-md-6">
         <x-form.select
             name="department_id"
-            label="Department"
+            :label="__('messages.department')"
             data-validate="required"
             :options="$departments"
             :selected="old(
@@ -86,7 +86,7 @@
     <div class="col-md-6">
         <x-form.input
             name="designation"
-            label="Designation"
+            :label="__('messages.designation')"
             data-validate="required"
             :value="old('designation', $employee->designation)"
         />
@@ -95,7 +95,7 @@
     <div class="col-md-6">
         <x-form.input
             name="salary"
-            label="Salary"
+            :label="__('messages.salary')"
             type="number"
             data-validate="required"
             :value="old('salary', $employee->salary)"
@@ -105,7 +105,7 @@
     <div class="col-md-12">
         <x-form.input
             name="address"
-            label="Address"
+            :label="__('messages.address')"
             :value="old('address', $employee->address)"
         />
     </div>
@@ -131,7 +131,7 @@
 
         <x-form.input
             name="profile_photo"
-            label="Change Profile Photo (jpg or png, max 2 MB)"
+            :label="__('messages.change_profile_photo')"
             type="file"
             accept=".jpg,.jpeg,.png"
             data-validate="file"

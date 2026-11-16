@@ -8,7 +8,7 @@
 
 @if ($errors->any())
     <x-alert type="danger">
-        <strong>Please fix the following:</strong>
+        <strong>{{ __('messages.please_fix_following') }}</strong>
         <ul class="mb-0">
             @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>

@@ -3,13 +3,13 @@
 
     {{-- USER DETAILS --}}
     <div class="col-12">
-        <h2 class="form-section-heading">User Details</h2>
+        <h2 class="form-section-heading">{{ __('messages.user_details') }}</h2>
     </div>
 
     <div class="col-md-6">
         <x-form.input
             name="email"
-            label="Email"
+            :label="__('messages.email')"
             type="email"
             data-validate="required|email"
         />
@@ -18,7 +18,7 @@
     <div class="col-md-6">
         <x-form.input
             name="username"
-            label="Username"
+            :label="__('messages.username')"
             data-validate="required"
         />
     </div>
@@ -26,7 +26,7 @@
     <div class="col-md-6">
         <x-form.input
             name="password"
-            label="Password"
+            :label="__('messages.password')"
             type="password"
             data-validate="required"
         />
@@ -35,11 +35,11 @@
     <div class="col-md-6">
         <x-form.select
             name="role"
-            label="Role"
+            :label="__('messages.role')"
             data-validate="required"
             :options="[
-                'admin' => 'Admin',
-                'employee' => 'Employee'
+                'admin' => __('messages.admin'),
+                'employee' => __('messages.employee')
             ]"
         />
     </div>
@@ -47,11 +47,11 @@
     <div class="col-md-6">
         <x-form.select
             name="status"
-            label="Status"
+            :label="__('messages.status')"
             :placeholder="null"
             :options="[
-                'active' => 'Active',
-                'inactive' => 'Inactive'
+                'active' => __('messages.active'),
+                'inactive' => __('messages.inactive')
             ]"
             selected="active"
         />
@@ -66,35 +66,35 @@
 
 <div id="employee-fields" class="mt-4">
 
-    <h2 class="form-section-heading">Employee Details</h2>
+    <h2 class="form-section-heading">{{ __('messages.employee_details_section') }}</h2>
 
     <div class="row g-2">
 
         <div class="col-md-6">
             <x-form.input
                 name="first_name"
-                label="First Name"
+                :label="__('messages.first_name')"
             />
         </div>
 
         <div class="col-md-6">
             <x-form.input
                 name="last_name"
-                label="Last Name"
+                :label="__('messages.last_name')"
             />
         </div>
 
         <div class="col-md-6">
             <x-form.input
                 name="phone"
-                label="Phone"
+                :label="__('messages.phone')"
             />
         </div>
 
         <div class="col-md-4">
             <x-form.input
                 name="date_of_birth"
-                label="Date of Birth"
+                :label="__('messages.date_of_birth')"
                 type="date"
             />
         </div>
@@ -102,7 +102,7 @@
         <div class="col-md-4">
             <x-form.input
                 name="date_of_joining"
-                label="Date of Joining"
+                :label="__('messages.date_of_joining')"
                 type="date"
             />
         </div>
@@ -110,11 +110,11 @@
         <div class="col-md-4">
             <x-form.select
                 name="gender"
-                label="Gender"
+                :label="__('messages.gender')"
                 :options="[
-                    'male' => 'Male',
-                    'female' => 'Female',
-                    'other' => 'Other'
+                    'male' => __('messages.male'),
+                    'female' => __('messages.female'),
+                    'other' => __('messages.other')
                 ]"
             />
         </div>
@@ -122,7 +122,7 @@
         <div class="col-md-4">
             <x-form.select
                 name="department_id"
-                label="Department"
+                :label="__('messages.department')"
                 :options="$departments"
             />
         </div>
@@ -130,14 +130,14 @@
         <div class="col-md-4">
             <x-form.input
                 name="designation"
-                label="Designation"
+                :label="__('messages.designation')"
             />
         </div>
 
         <div class="col-md-4">
             <x-form.input
                 name="salary"
-                label="Salary"
+                :label="__('messages.salary')"
                 type="number"
             />
         </div>
@@ -145,14 +145,14 @@
         <div class="col-md-8">
             <x-form.input
                 name="address"
-                label="Address"
+                :label="__('messages.address')"
             />
         </div>
 
         <div class="col-md-6">
             <x-form.input
                 name="profile_photo"
-                label="Profile Photo (jpg or png, max 2 MB)"
+                :label="__('messages.profile_photo')"
                 type="file"
                 accept=".jpg,.jpeg,.png"
                 data-validate="file"

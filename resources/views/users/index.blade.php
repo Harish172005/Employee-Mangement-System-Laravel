@@ -1,26 +1,26 @@
 @extends('layouts.app')
-@section('title', 'Users')
-@section('heading', 'Users')
+@section('title', __('messages.users'))
+@section('heading', __('messages.users'))
 
 @section('content')
     <div class="user-page-toolbar">
         <div>
-            <h2 class="user-page-title">Account directory</h2>
-            <p class="user-page-description">Manage access, roles, and account status for your team.</p>
+            <h2 class="user-page-title">{{ __('messages.account_directory') }}</h2>
+            <p class="user-page-description">{{ __('messages.manage_team_accounts') }}</p>
         </div>
     </div>
 
-    <x-card title="All accounts">
+    <x-card :title="__('messages.all_accounts')">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 user-table">
                 <thead>
                     <tr>
-                        <th>Team member</th>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Joined</th>
-                        <th>Actions</th>
+                        <th>{{ __('messages.team_member') }}</th>
+                        <th>{{ __('messages.username') }}</th>
+                        <th>{{ __('messages.role') }}</th>
+                        <th>{{ __('messages.status') }}</th>
+                        <th>{{ __('messages.joined') }}</th>
+                        <th>{{ __('messages.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -37,16 +37,16 @@
                                 </div>
                             </td>
                             <td><span class="user-username">{{ '@' . $user['username'] }}</span></td>
-                            <td><span class="role-badge {{ strtolower($role) === 'admin' ? 'role-badge-admin' : 'role-badge-employee' }}">{{ ucfirst($role) }}</span></td>
+                            <td><span class="role-badge {{ strtolower($role) === 'admin' ? 'role-badge-admin' : 'role-badge-employee' }}">{{ __('messages.' . strtolower($role)) }}</span></td>
                             <td><x-status-badge :status="$user['status']" /></td>
                             <td class="text-secondary">{{ $user['created_at'] }}</td>
                             <td class="table-actions">
                                 @unless ($user['status'] === 'inactive')
                                     <form action="{{ route('admin.users.destroy', $user['username']) }}" method="POST" class="d-inline"
-                                          data-confirm="Deactivate this user?">
+                                          data-confirm="{{ __('messages.deactivate_user_confirm') }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger">Deactivate</button>
+                                        <button class="btn btn-sm btn-outline-danger">{{ __('messages.deactivate') }}</button>
                                     </form>
                                 @endunless
                             </td>
@@ -58,9 +58,9 @@
                                     <span class="user-empty-icon" aria-hidden="true">
                                         <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6m-3-3h6"/></svg>
                                     </span>
-                                    <strong>No accounts yet</strong>
-                                    <span>Create a user account to get your team started.</span>
-                                    <a href="{{ route('admin.users.create') }}" class="btn btn-sm btn-primary mt-2">Add first user</a>
+                                    <strong>{{ __('messages.no_accounts_yet') }}</strong>
+                                    <span>{{ __('messages.create_user_account') }}</span>
+                                    <a href="{{ route('admin.users.create') }}" class="btn btn-sm btn-primary mt-2">{{ __('messages.add_first_user') }}</a>
                                 </div>
                             </td>
                         </tr>

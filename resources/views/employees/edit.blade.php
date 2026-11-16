@@ -1,16 +1,16 @@
 @extends('layouts.app')
-@section('title', 'Edit Employee')
-@section('heading', 'Edit Employee')
+@section('title', __('messages.edit_employee'))
+@section('heading', __('messages.edit_employee'))
 
 @section('content')
-    <x-card title="Employee information">
+    <x-card :title="__('messages.employee_information')">
         <form method="POST" data-validate-form action="{{ route('admin.employees.update', $employee) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             @include('employees.edit-form', ['employee' => $employee])
             <div class="d-flex flex-wrap gap-2 mt-3">
-                <button class="btn btn-primary">Save changes</button>
-                <a href="{{ route('admin.employees.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button class="btn btn-primary">{{ __('messages.save_changes') }}</button>
+                <a href="{{ route('admin.employees.index') }}" class="btn btn-outline-secondary">{{ __('messages.cancel') }}</a>
             </div>
         </form>
     </x-card>

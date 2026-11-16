@@ -1,32 +1,32 @@
  @extends('layouts.app')
-@section('title', 'My Department')
-@section('heading', 'My Department')
+@section('title', __('messages.my_department'))
+@section('heading', __('messages.my_department'))
 
 @section('content')
     <x-card :title="$department['name']">
         <dl class="row detail-list mb-0">
-            <dt class="col-sm-3">Description</dt>
+            <dt class="col-sm-3">{{ __('messages.description') }}</dt>
             <dd class="col-sm-9">{{ $department['description'] }}</dd>
 
-            <dt class="col-sm-3">Total Employees</dt>
+            <dt class="col-sm-3">{{ __('messages.total_employees') }}</dt>
             <dd class="col-sm-9">{{ $department['employee_count'] }}</dd>
 
-            <dt class="col-sm-3">Status</dt>
+            <dt class="col-sm-3">{{ __('messages.status') }}</dt>
             <dd class="col-sm-9">
                 <x-status-badge :status="$department['status']" />
             </dd>
         </dl>
     </x-card>
 
-    <x-card title="Department Employees">
+    <x-card :title="__('messages.department_employees_title')">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Employee Code</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Status</th>
+                        <th>{{ __('messages.employee_code') }}</th>
+                        <th>{{ __('messages.name') }}</th>
+                        <th>{{ __('messages.email') }}</th>
+                        <th>{{ __('messages.status') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -42,7 +42,7 @@
                     @empty
                         <tr>
                             <td colspan="4" class="text-center text-muted">
-                                No employees found in this department.
+                                {{ __('messages.no_employees_in_department') }}
                             </td>
                         </tr>
                     @endforelse

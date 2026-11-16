@@ -15,8 +15,8 @@
                 <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}">
             </a>
             <div class="auth-brand-copy">
-                <h1>People are at the heart of every great team.</h1>
-                <p>One clear place to manage your workforce, departments, and employee experience.</p>
+                <h1>{{ __('messages.guest_heading') }}</h1>
+                <p>{{ __('messages.guest_description') }}</p>
             </div>
             <small class="text-white-50">&copy; {{ date('Y') }} {{ $appName }}</small>
         </aside>
