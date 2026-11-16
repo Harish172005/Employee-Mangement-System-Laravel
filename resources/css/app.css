@@ -1,11 +1,9 @@
-@import 'tailwindcss';
+@import 'bootstrap/dist/css/bootstrap.min.css';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+body { font-size: 0.95rem; }
+.table td, .table th { vertical-align: middle; }
+.list-group-item.active { background-color: #212529; border-color: #212529; }
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+@media (min-width: 768px) {
+    .sidebar { min-height: calc(100vh - 56px); }
 }
