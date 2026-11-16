@@ -1,4 +1,4 @@
-@props(['name', 'label', 'options' => [], 'selected' => null, 'placeholder' => '-- Select --'])
+@props(['name', 'label', 'options' => [], 'selected' => null, 'placeholder' => __('messages.select_option')])
 <div class="mb-3">
     <label for="{{ $name }}" class="form-label">{{ $label }}</label>
     <select id="{{ $name }}" name="{{ $name }}"

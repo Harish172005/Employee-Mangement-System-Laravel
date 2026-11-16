@@ -1,20 +1,19 @@
 @extends('layouts.app')
-@section('title', 'Reports')
-@section('heading', 'Reports')
+@section('title', __('messages.reports'))
+@section('heading', __('messages.reports'))
 
 @section('content')
-    <x-card title="Eager-loading query comparison">
-        <p class="mb-0">
-            Loading 10 employees without eager loading ran <strong>{{ $nPlusOneQueryCount }}</strong> queries;
-            loading them with <code>with('department')</code> ran <strong>{{ $eagerLoadedQueryCount }}</strong>.
-            The eager-loaded result avoids one department lookup per employee.
+    <x-card :title="__('messages.eager_loading_comparison')">
+        <p class="mb-0 text-secondary">
+            {{ __('messages.report_query_comparison', ['lazy' => $nPlusOneQueryCount, 'eager' => $eagerLoadedQueryCount]) }}
         </p>
     </x-card>
 
-    <x-card title="Employees and Salary by Department">
-        <table class="table table-striped mb-0">
+    <x-card :title="__('messages.employees_salary_by_department')">
+        <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
             <thead>
-                <tr><th>Department</th><th>Employees</th><th>Average Salary</th><th>Total Salary</th></tr>
+                <tr><th>{{ __('messages.department') }}</th><th>{{ __('messages.employees') }}</th><th>{{ __('messages.average_salary') }}</th><th>{{ __('messages.total_salary_label') }}</th></tr>
             </thead>
             <tbody>
                 @foreach ($report as $row)
@@ -27,6 +26,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
     </x-card>
-    <p class="text-muted small">Employee relations are eager-aggregated with Eloquent to avoid per-department queries.</p>
+    <p class="text-muted small">{{ __('messages.employee_relations_aggregated') }}</p>
 @endsection

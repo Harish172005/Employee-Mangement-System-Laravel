@@ -8,10 +8,22 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Enums\Status;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use App\Enums\Role;
 class EloquentEmployeeRepository implements EmployeeRepository
  {
-     public function getAllEmployees($filters = []): LengthAwarePaginator
+     public function getAllEmployees(): LengthAwarePaginator
      {
+        $query = Employee::with(['department', 'user']);
+   
+         return $query->paginate(10)->withQueryString(); 
+
+     }
+
+     public function getFilteredEmployees($filters = []): LengthAwarePaginator
+     {
+
          $query = Employee::query()
             ->with(['department', 'user'])
             ->search($filters['q'] ?? null)
@@ -27,13 +39,21 @@ class EloquentEmployeeRepository implements EmployeeRepository
             ->when($filters['with_trashed'] ?? false, fn (Builder $query) => $query->withTrashed());
             
             return $query->paginate(10)->withQueryString(); 
+     }  
 
-     }
 
-     public function createEmployee(array $data): Employee
-     {
-         return Employee::create($data);
-     }
+
+        public function createEmployee(
+            array $userData,
+            array $employeeData
+        ): Employee {
+            $user = User::create($userData);
+
+            $employeeData['user_id'] = $user->id;
+
+            return Employee::create($employeeData);
+        }
+
 
      public function updateEmployee(Employee $employee, array $data): Employee
      {

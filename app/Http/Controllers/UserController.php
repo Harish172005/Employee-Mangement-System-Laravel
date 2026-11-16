@@ -28,24 +28,7 @@ class UserController extends Controller
 
         return view('users.index', compact('users'));
     }
-
-    public function create()
-    {
-        return view('users.create');
-    }
-
-    public function store(UserRequest $request)
-    {
-        Gate::authorize('create', User::class);
-        $validated = $request->validated();
-
-        $this->service->createUser($validated);
-
-        return redirect()
-            ->route('admin.users.index')
-            ->with('success', 'User created successfully.');
-        } 
-
+    
     public function show($user)
     {
         Gate::authorize('viewAny', User::class);

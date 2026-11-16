@@ -19,7 +19,7 @@ const rules = {
     number: (value) =>
         value === '' || (!isNaN(value) && Number(value) >= 0) || 'Enter a valid positive number.',
 
-    file: (value, el) => {
+    file: (el) => {
         if (el.files.length === 0) return true; // optional unless "required" is also set
         const file = el.files[0];
         const types = (el.dataset.types || 'jpg,jpeg,png').split(',');

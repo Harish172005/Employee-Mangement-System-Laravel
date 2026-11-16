@@ -11,11 +11,6 @@ class UserService
     public function __construct(protected UserRepository $userRepository)
     {
     }
-    public function createUser(array $data): User
-    {
-        return $this->userRepository->createUser($data);
-    }
-
     public function deleteUser($user)
     {
        return $this->userRepository->deleteUser($user);

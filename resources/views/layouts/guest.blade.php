@@ -6,18 +6,29 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title') | {{ $appName }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
 </head>
-<body class="bg-light">
-    <div class="container">
-        <div class="row justify-content-center mt-5">
-            <div class="col-11 col-sm-8 col-md-5 col-lg-4">
-                <h4 class="text-center mb-3">
-                    <img src="{{ asset('images/logo.svg') }}" alt="Logo" height="32" class="me-2">{{ $appName }}
-                </h4>
+<body>
+    <main class="auth-shell">
+        <aside class="auth-brand-panel">
+            <a href="{{ route('login') }}" aria-label="{{ $appName }}">
+                <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}">
+            </a>
+            <div class="auth-brand-copy">
+                <h1>{{ __('messages.guest_heading') }}</h1>
+                <p>{{ __('messages.guest_description') }}</p>
+            </div>
+            <small class="text-white-50">&copy; {{ date('Y') }} {{ $appName }}</small>
+        </aside>
+        <section class="auth-main">
+            <div class="auth-content">
+                <a class="auth-mobile-brand" href="{{ route('login') }}" aria-label="{{ $appName }}">
+                    <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}">
+                </a>
                 @include('partials.alerts')
                 @yield('content')
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
 </body>
 </html>

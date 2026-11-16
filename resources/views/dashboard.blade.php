@@ -1,39 +1,44 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard')
-@section('heading', 'Dashboard')
+@section('title', __('messages.dashboard'))
+@section('heading', __('messages.dashboard'))
 
 @section('content')
 
     {{-- Statistics --}}
-    <div class="row">
+    <div class="row g-3">
         @foreach ($stats as $label => $value)
-            <div class="col-md-3 mb-3">
-                <x-card>
-                    <div class="text-muted">{{ $label }}</div>
-                    <div class="fs-3 fw-bold">{{ $value }}</div>
+            <div class="col-sm-6 col-xl-3">
+                <x-card class="stat-card">
+                    <div class="stat-label">{{ __('messages.' . strtolower(str_replace(' ', '_', $label))) }}</div>
+                    <div class="stat-value">{{ $value }}</div>
                 </x-card>
             </div>
         @endforeach
     </div>
     {{-- Total Salary --}}
-    <x-card title="Total Salary">
-        <div class="fs-4 fw-bold">
-            {{ number_format((float) $totalSalary, 2) }}
+    <div class="row">
+        <div class="col-12">
+            <x-card :title="__('messages.total_salary')">
+                <div class="fs-3 fw-bold text-primary">
+                    {{ number_format((float) $totalSalary, 2) }}
+                </div>
+                <div class="small text-muted mt-1">{{ __('messages.across_all_departments') }}</div>
+            </x-card>
         </div>
-    </x-card>
+    </div>
 
 
     {{-- Department Report --}}
-    <x-card title="Employees and Salary by Department">
+    <x-card :title="__('messages.employees_salary_by_department')">
         <div class="table-responsive">
-            <table class="table table-striped mb-0">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Department</th>
-                        <th>Employees</th>
-                        <th>Average Salary</th>
-                        <th>Total Salary</th>
+                        <th>{{ __('messages.department') }}</th>
+                        <th>{{ __('messages.employees') }}</th>
+                        <th>{{ __('messages.average_salary') }}</th>
+                        <th>{{ __('messages.total_salary_label') }}</th>
                     </tr>
                 </thead>
 
@@ -52,7 +57,7 @@
                     @empty
                         <tr>
                             <td colspan="4" class="text-center text-muted">
-                                No department data found.
+                                {{ __('messages.no_department_data') }}
                             </td>
                         </tr>
                     @endforelse

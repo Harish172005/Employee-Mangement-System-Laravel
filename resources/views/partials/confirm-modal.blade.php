@@ -3,13 +3,13 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Please confirm</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title">{{ __('messages.please_confirm') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('messages.close') }}"></button>
             </div>
-            <div class="modal-body" data-confirm-message>Are you sure?</div>
+            <div class="modal-body" data-confirm-message>{{ __('messages.are_you_sure') }}</div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" data-confirm-ok>Yes, continue</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('messages.cancel') }}</button>
+                <button type="button" class="btn btn-danger" data-confirm-ok>{{ __('messages.yes_continue') }}</button>
             </div>
         </div>
     </div>

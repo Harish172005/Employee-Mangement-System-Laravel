@@ -8,7 +8,8 @@ use App\Enums\Gender;
 use App\Enums\Status;
 use App\Rules\MinimumAge;
 use Illuminate\Validation\Rule;
-class EmployeeRequest extends FormRequest
+use App\Enums\Role;
+class EmployeeCreateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,25 +24,127 @@ class EmployeeRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
+
     public function rules(): array
     {
-        $id = $this->route('employee')?->id;
-        return [
-            'first_name' => ['required', 'string', 'max:50'],
-            'last_name' => ['required', 'string', 'max:50'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('employees', 'email')->ignore($id)],
-            'phone' => ['required', 'string', 'max:10'],
-            'date_of_birth' => ['required', 'date', new MinimumAge],
-            'date_of_joining' => ['required', 'date'],
-            'gender' => ['required', Rule::enum(Gender::class)],
-            'department_id' => ['required', 'exists:departments,id'],
-            'designation' => ['required', 'string', 'max:100'],
-            'salary' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
-            'address' => ['nullable', 'string', 'max:5000'],
-            'status' => ['required', Rule::enum(Status::class)],
-            'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
-        ];
-    }
+     $employeeId = $this->route('employee')?->id;
+
+     return [
+
+        'username' => [
+            'required',
+            'string',
+            'max:255',
+        ],
+
+        'email' => [
+            'required',
+            'email',
+            'max:255',
+            Rule::unique('users', 'email'),
+        ],
+
+        'role' => [
+            'required',
+            Rule::enum(Role::class),
+        ],
+
+        'status' => [
+            'required',
+            Rule::enum(Status::class),
+        ],
+
+        'password' => [
+            'required',
+            'string',
+            'min:8',
+            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/',
+        ],
+
+
+        'name' => [
+            'required_if:role,admin',
+            'nullable',
+            'string',
+            'max:255',
+        ],
+
+
+        'first_name' => [
+            'required_if:role,employee',
+            'nullable',
+            'string',
+            'max:50',
+        ],
+
+        'last_name' => [
+            'required_if:role,employee',
+            'nullable',
+            'string',
+            'max:50',
+        ],
+
+        'phone' => [
+            'required_if:role,employee',
+            'nullable',
+            'string',
+            'max:10',
+        ],
+
+        'date_of_birth' => [
+            'required_if:role,employee',
+            'nullable',
+            'date',
+            new MinimumAge,
+        ],
+
+        'date_of_joining' => [
+            'required_if:role,employee',
+            'nullable',
+            'date',
+        ],
+
+        'gender' => [
+            'required_if:role,employee',
+            'nullable',
+            Rule::enum(Gender::class),
+        ],
+
+        'department_id' => [
+            'required_if:role,employee',
+            'nullable',
+            'exists:departments,id',
+        ],
+
+        'designation' => [
+            'required_if:role,employee',
+            'nullable',
+            'string',
+            'max:100',
+        ],
+
+        'salary' => [
+            'required_if:role,employee',
+            'nullable',
+            'numeric',
+            'min:0',
+            'max:99999999.99',
+        ],
+
+        'address' => [
+            'nullable',
+            'string',
+            'max:5000',
+        ],
+
+        'profile_photo' => [
+            'nullable',
+            'image',
+            'mimes:jpg,jpeg,png',
+            'max:2048',
+        ],
+    ];
+}
     public function messages(): array
     {
         return [

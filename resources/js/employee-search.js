@@ -1,123 +1,288 @@
-// Live employee search: sends the text to the JSON endpoint with fetch()
-// and rebuilds the table rows without reloading the page.
 
 const input = document.getElementById('employee-search');
 
 if (input) {
+    const form = input.form;
     const searchUrl = input.dataset.searchUrl;
     const tbody = document.getElementById('employee-rows');
     const pager = document.getElementById('employee-pagination');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-    const originalRows = tbody.innerHTML;
-    const startedWithQuery = input.value.trim() !== '';
+
+    const csrfToken =
+        document.querySelector('meta[name="csrf-token"]')?.content;
+
     let timer;
 
+    // Search input → debounce
     input.addEventListener('input', () => {
         clearTimeout(timer);
-        timer = setTimeout(() => search(input.value.trim()), 300); // debounce
+
+        timer = setTimeout(() => {
+            search();
+        }, 300);
     });
 
-    async function search(query) {
-        if (query === '') {
-            if (startedWithQuery) {
-                window.location.href = input.form.action; // back to the plain list
-                return;
+    // Filters → search immediately when changed
+    form.querySelectorAll(
+        'select, input[type="checkbox"]'
+    ).forEach((filter) => {
+        filter.addEventListener('change', () => {
+            search();
+        });
+    });
+
+    async function search() {
+        const formData = new FormData(form);
+        const params = new URLSearchParams();
+
+        for (const [key, value] of formData.entries()) {
+            if (value !== '') {
+                params.append(key, value);
             }
-            tbody.innerHTML = originalRows;
-            pager?.classList.remove('d-none');
-            return;
         }
 
         try {
-            const response = await fetch(`${searchUrl}?q=${encodeURIComponent(query)}`, {
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const response = await fetch(
+                `${searchUrl}?${params.toString()}`,
+                {
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
 
             const json = await response.json();
-            renderRows(json.data);
+
+            const employees = json.data?.data ?? [];
+
+            renderRows(employees);
+
             pager?.classList.add('d-none');
+
         } catch (error) {
-            showMessage('Search failed. Please try again.', 'text-danger');
+            console.error('Employee search failed:', error);
+
+            showMessage(
+                'Search failed. Please try again.',
+                'text-danger'
+            );
         }
     }
 
+
     function showMessage(text, extraClass = '') {
         tbody.replaceChildren();
+
         const tr = document.createElement('tr');
         const td = document.createElement('td');
+
         td.colSpan = 6;
         td.className = `text-center ${extraClass}`;
         td.textContent = text;
+
         tr.append(td);
         tbody.append(tr);
     }
 
+
     function cell(text) {
         const td = document.createElement('td');
-        td.textContent = String(text);
+
+        td.textContent = String(text ?? '');
+
         return td;
     }
 
+
     function hiddenInput(name, value) {
         const field = document.createElement('input');
+
         field.type = 'hidden';
         field.name = name;
         field.value = value;
+
         return field;
     }
 
+
     function actionLink(label, href, style) {
-        const a = document.createElement('a');
-        a.href = href;
-        a.className = `btn btn-sm btn-${style} me-1`;
-        a.textContent = label;
-        return a;
+        const link = document.createElement('a');
+
+        link.href = href;
+        link.className = `btn btn-sm btn-${style} me-1`;
+        link.textContent = label;
+
+        return link;
     }
 
+
+    function createActionForm({
+        action,
+        method = 'POST',
+        buttonText,
+        buttonClass,
+        confirmMessage = null,
+    }) {
+        const form = document.createElement('form');
+
+        form.method = 'POST';
+        form.action = action;
+        form.className = 'd-inline';
+
+        if (confirmMessage) {
+            form.dataset.confirm = confirmMessage;
+        }
+
+        form.append(
+            hiddenInput('_token', csrfToken)
+        );
+
+        if (method !== 'POST') {
+            form.append(
+                hiddenInput('_method', method)
+            );
+        }
+
+        const button = document.createElement('button');
+
+        button.type = 'submit';
+        button.className = `btn btn-sm ${buttonClass}`;
+        button.textContent = buttonText;
+
+        form.append(button);
+
+        return form;
+    }
+
+
     function renderRows(rows) {
-        if (rows.length === 0) {
+        if (!Array.isArray(rows) || rows.length === 0) {
             showMessage('No employees found.');
             return;
         }
 
         tbody.replaceChildren();
+
         rows.forEach((employee, index) => {
             const tr = document.createElement('tr');
-            tr.append(cell(index + 1), cell(employee.code), cell(employee.name), cell(employee.department));
 
-            // Status badge (textContent is used everywhere so data can never inject HTML)
+            // Basic employee information
+            tr.append(
+                cell(index + 1),
+                cell(employee.employee_code),
+                cell(
+                    `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim()
+                ),
+                cell(employee.department?.name ?? '-')
+            );
+
+
             const statusCell = document.createElement('td');
+
             const badge = document.createElement('span');
-            badge.className = `badge bg-${employee.status === 'active' ? 'success' : 'secondary'}`;
-            badge.textContent = employee.status.charAt(0).toUpperCase() + employee.status.slice(1);
+
+            const status =
+                typeof employee.status === 'string'
+                    ? employee.status
+                    : employee.status?.value;
+
+            badge.className =
+                `badge bg-${
+                    status === 'active'
+                        ? 'success'
+                        : 'secondary'
+                }`;
+
+            badge.textContent =
+                status
+                    ? status.charAt(0).toUpperCase() + status.slice(1)
+                    : '-';
+
             statusCell.append(badge);
             tr.append(statusCell);
 
-            // Action buttons
+
             const actions = document.createElement('td');
-            actions.append(
-                actionLink('View', employee.urls.show, 'info'),
-                actionLink('Edit', employee.urls.edit, 'warning'),
-            );
 
-            if (employee.status === 'active') {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = employee.urls.destroy;
-                form.className = 'd-inline';
-                form.dataset.confirm = 'Deactivate this employee?'; // handled by delete-confirm.js
-                form.append(hiddenInput('_token', csrfToken), hiddenInput('_method', 'DELETE'));
+            const isTrashed =
+                employee.deleted_at !== null &&
+                employee.deleted_at !== undefined;
 
-                const button = document.createElement('button');
-                button.className = 'btn btn-sm btn-danger';
-                button.textContent = 'Deactivate';
-                form.append(button);
-                actions.append(form);
+
+            if (isTrashed) {
+
+                // Restore
+                if (employee.urls?.restore) {
+                    actions.append(
+                        createActionForm({
+                            action: employee.urls.restore,
+                            buttonText: 'Restore',
+                            buttonClass: 'btn-success',
+                        })
+                    );
+                }
+
+
+                // Force Delete
+                if (employee.urls?.force_delete) {
+                    actions.append(
+                        createActionForm({
+                            action: employee.urls.force_delete,
+                            method: 'DELETE',
+                            buttonText: 'Force delete',
+                            buttonClass: 'btn-outline-danger',
+                            confirmMessage:
+                                'Permanently delete this employee? This cannot be undone.',
+                        })
+                    );
+                }
+
+            }
+
+            else {
+
+                if (employee.urls?.show) {
+                    actions.append(
+                        actionLink(
+                            'View',
+                            employee.urls.show,
+                            'info'
+                        )
+                    );
+                }
+
+                // Edit
+                if (employee.urls?.edit) {
+                    actions.append(
+                        actionLink(
+                            'Edit',
+                            employee.urls.edit,
+                            'warning'
+                        )
+                    );
+                }
+
+
+                // Deactivate
+                if (
+                    status === 'active' &&
+                    employee.urls?.destroy
+                ) {
+                    actions.append(
+                        createActionForm({
+                            action: employee.urls.destroy,
+                            method: 'DELETE',
+                            buttonText: 'Deactivate',
+                            buttonClass: 'btn-danger',
+                            confirmMessage:
+                                'Deactivate this employee?',
+                        })
+                    );
+                }
             }
 
             tr.append(actions);

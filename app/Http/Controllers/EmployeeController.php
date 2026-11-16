@@ -2,25 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Gender;
-use App\Enums\Role;
 use App\Enums\Status;
-use App\Http\Requests\EmployeeRequest;
+use App\Http\Requests\EmployeeCreateRequest;
+use App\Http\Requests\EmployeeEditRequest;
 use App\Models\Employee;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
-use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use App\Services\EmployeeService;
 use App\Http\Requests\EmployeeFilterRequest;
 class EmployeeController extends Controller
 {
-    private const PHOTO_DISK = 'public';
-
     public function __construct(protected EmployeeService $employeeService){
     }
 
@@ -28,20 +19,7 @@ class EmployeeController extends Controller
     {
         Gate::authorize('viewAny', Employee::class);
         $filters = $request->validated();
-        $employees = $this->employeeService->getAllEmployees($filters);
-
-        // $query = $this->filteredQuery($filters);
-
-        // if ($request->boolean('with_trashed')) {
-        //     $employees->withTrashed();
-        // }
-
-        // $employees = $query
-        //     ->orderBy($filters['sort'] ?? 'last_name', $filters['direction'] ?? 'asc')
-        //     ->orderBy('first_name')
-        //     ->paginate(10)
-        //     ->withQueryString();
-
+        $employees = $this->employeeService->getAllEmployees();
         return view('employees.index', compact('employees', 'filters'));
     }
 
@@ -49,22 +27,31 @@ class EmployeeController extends Controller
     {
         $filters = $request->validated();
 
-        $employees = $this->filteredQuery($filters)
-            ->orderBy('last_name')
-            ->limit(10)
-            ->get()
-            ->map(fn ($employee) => [
-                'id' => $employee->id,
-                'code' => $employee->employee_code,
-                'name' => $employee->full_name,
-                'department' => $employee->department?->name,
-                'status' => $employee->status->value,
-                'urls' => [
-                    'show' => route('admin.employees.show', $employee),
-                    'edit' => route('admin.employees.edit', $employee),
-                    'destroy' => route('admin.employees.destroy', $employee),
-                ],
-            ]);
+        $employees = $this->employeeService->getFilteredEmployees($filters);
+
+        $employees->getCollection()->transform(function (Employee $employee) {
+        return [
+            'id' => $employee->id,
+            'employee_code' => $employee->employee_code,
+            'first_name' => $employee->first_name,
+            'last_name' => $employee->last_name,
+            'status' => $employee->status->value,
+            'deleted_at' => $employee->deleted_at,
+
+            'department' => [
+                'id' => $employee->department?->id,
+                'name' => $employee->department?->name,
+            ],
+
+            'urls' => [
+                'show' => route('admin.employees.show', $employee),
+                'edit' => route('admin.employees.edit', $employee),
+                'destroy' => route('admin.employees.destroy', $employee),
+                'restore' => route('admin.employees.restore', $employee),
+                'force_delete' => route('admin.employees.force-delete', $employee),
+            ],
+        ];
+    });
 
         return response()->json([
             'status' => true,
@@ -75,12 +62,10 @@ class EmployeeController extends Controller
 
     public function create()
     {
-        return view('employees.create', [
-            'availableUsers' => $this->availableUsers(),
-        ]);
+        return view('employees.create');
     }
 
-    public function store(EmployeeRequest $request)
+    public function store(EmployeeCreateRequest $request)
     {
         $data = $request->validated();
         unset($data['profile_photo']);
@@ -127,47 +112,31 @@ class EmployeeController extends Controller
     {
         Gate::authorize('update', Employee::class);
         $employee = $this->employeeService->getEmployeeById($id);
-        $availableUsers = $this->availableUsers($employee); 
 
-        return view('employees.edit',compact('employee', 'availableUsers' ));
+        return view('employees.edit',compact('employee'));
     }
 
-    public function update(EmployeeRequest $request, Employee $employee)
+    public function update(EmployeeEditRequest $request, Employee $employee)
     {
         $data = $request->validated();
+
+        $profilePhoto = $request->file('profile_photo');
+
         unset($data['profile_photo']);
 
-        $this->employeeService->updateEmployee($employee->id, $data, $request->file('profile_photo'));
+        $this->employeeService->updateEmployee(
+            $employee->id,
+            $data,
+            $profilePhoto
+        );
 
-        // $oldPhoto = $employee->profile_photo;
-        // $newPhoto = null;
+        return redirect()
+            ->route('admin.employees.show', $employee)
+            ->with('success', 'Employee updated successfully.');
+    }
 
-    //     try {
-    //         if ($request->hasFile('profile_photo')) {
-    //             $newPhoto = $request->file('profile_photo')->store(self::PHOTO_DIR, self::PHOTO_DISK);
-    //             $data['profile_photo'] = $newPhoto;
-    //         }
-
-    //         $employee->update($data);
-    //     } catch (\Throwable $e) {
-    //         if ($newPhoto) {
-    //             Storage::disk(self::PHOTO_DISK)->delete($newPhoto);
-    //         }
-
-    //         Log::error('Employee update failed: ' . $e->getMessage(), ['employee_id' => $employee->id]);
-
-    //         return back()->withInput()->with('error', 'Could not update the employee. Please try again.');
-    //     }
-
-    //     if ($newPhoto && $oldPhoto) {
-    //         Storage::disk(self::PHOTO_DISK)->delete($oldPhoto);
-    //     }
-
-     return redirect()->route('admin.employees.show', $employee)->with('success', 'Employee updated.');
-     }
-
-        public function destroy(Employee $employee)
-        {
+     public function destroy(Employee $employee)
+     {
             Gate::authorize('delete', $employee);
 
             DB::transaction(function () use ($employee) {
@@ -176,7 +145,7 @@ class EmployeeController extends Controller
             });
 
             return redirect()->route('admin.employees.index')->with('success', 'Employee deactivated successfully.');
-        }
+     }
 
     public function restore(int $id)
     {
@@ -214,31 +183,17 @@ class EmployeeController extends Controller
     }
 
 
-    private function filteredQuery(array $filters): Builder
-    {
-        return Employee::query()
-            ->with(['department', 'user'])
-            ->search($filters['q'] ?? null)
-            ->when($filters['department'] ?? null, fn (Builder $query, $department) => $query->where('department_id', $department))
-            ->when($filters['status'] ?? null, fn (Builder $query, $status) => match ($status) {
-                Status::Active->value => $query->active(),
-                Status::Inactive->value => $query->inactive(),
-                default => $query,
-            })
-            ->when($filters['gender'] ?? null, fn (Builder $query, $gender) => $query->where('gender', $gender));
-    }
-
-    private function availableUsers(?Employee $employee = null): array
-    {
-        return User::where('role', Role::Employee->value)
-            ->where(function ($query) use ($employee) {
-                $query->doesntHave('employee');
-                if ($employee?->user_id) {
-                    $query->orWhere('id', $employee->user_id);
-                }
-            })
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
+    // private function filteredQuery(array $filters): Builder
+    // {
+    //     return Employee::query()
+    //         ->with(['department', 'user'])
+    //         ->search($filters['q'] ?? null)
+    //         ->when($filters['department'] ?? null, fn (Builder $query, $department) => $query->where('department_id', $department))
+    //         ->when($filters['status'] ?? null, fn (Builder $query, $status) => match ($status) {
+    //             Status::Active->value => $query->active(),
+    //             Status::Inactive->value => $query->inactive(),
+    //             default => $query,
+    //         })
+    //         ->when($filters['gender'] ?? null, fn (Builder $query, $gender) => $query->where('gender', $gender));
+    // }
 }

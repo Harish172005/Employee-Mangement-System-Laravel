@@ -19,6 +19,10 @@ use App\Contracts\DepartmentRepository;
 use App\Repositories\EloquentDepartmentRepository; 
 use App\Contracts\UserRepository;
 use App\Repositories\EloquentUserRepository; 
+use App\Contracts\ProfileRepository;
+use App\Repositories\EloquentProfileRepository;
+use App\Contracts\DashboardRepository;
+use App\Repositories\EloquentDashboardRepository;   
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,6 +41,16 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             UserRepository::class,
             EloquentUserRepository::class
+        );
+
+        $this->app->bind(
+            ProfileRepository::class,
+            EloquentProfileRepository::class
+        );
+
+        $this->app->bind(
+            DashboardRepository::class,
+            EloquentDashboardRepository::class
         );
     }
 
