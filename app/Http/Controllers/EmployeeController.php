@@ -13,44 +13,47 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+use App\Services\EmployeeService;
+use App\Http\Requests\EmployeeFilterRequest;
 class EmployeeController extends Controller
 {
     private const PHOTO_DISK = 'public';
-    private const PHOTO_DIR = 'employee-photos';
 
-    public function index(Request $request)
+    public function __construct(protected EmployeeService $employeeService){
+    }
+
+    public function index(EmployeeFilterRequest $request)
     {
-        $filters = $request->validate($this->filterRules() + [
-            'sort' => ['nullable', Rule::in(['employee_code', 'first_name', 'last_name', 'salary', 'date_of_joining', 'created_at'])],
-            'direction' => ['nullable', Rule::in(['asc', 'desc'])],
-            'with_trashed' => ['nullable', 'boolean'],
-        ]);
+        Gate::authorize('viewAny', Employee::class);
+        $filters = $request->validated();
+        $employees = $this->employeeService->getAllEmployees($filters);
 
-        $query = $this->filteredQuery($filters);
+        // $query = $this->filteredQuery($filters);
 
-        if ($request->boolean('with_trashed')) {
-            $query->withTrashed();
-        }
+        // if ($request->boolean('with_trashed')) {
+        //     $employees->withTrashed();
+        // }
 
-        $employees = $query
-            ->orderBy($filters['sort'] ?? 'last_name', $filters['direction'] ?? 'asc')
-            ->orderBy('first_name')
-            ->paginate(10)
-            ->withQueryString();
+        // $employees = $query
+        //     ->orderBy($filters['sort'] ?? 'last_name', $filters['direction'] ?? 'asc')
+        //     ->orderBy('first_name')
+        //     ->paginate(10)
+        //     ->withQueryString();
 
         return view('employees.index', compact('employees', 'filters'));
     }
 
-    public function search(Request $request)
+    public function search(EmployeeFilterRequest $request)
     {
-        $filters = $request->validate($this->filterRules());
+        $filters = $request->validated();
 
         $employees = $this->filteredQuery($filters)
             ->orderBy('last_name')
             ->limit(10)
             ->get()
-            ->map(fn (Employee $employee) => [
+            ->map(fn ($employee) => [
                 'id' => $employee->id,
                 'code' => $employee->employee_code,
                 'name' => $employee->full_name,
@@ -72,40 +75,43 @@ class EmployeeController extends Controller
 
     public function create()
     {
-        return view('employees.create');
+        return view('employees.create', [
+            'availableUsers' => $this->availableUsers(),
+        ]);
     }
 
     public function store(EmployeeRequest $request)
     {
         $data = $request->validated();
         unset($data['profile_photo']);
-        $path = null;
+        $this->employeeService->createEmployee($data, $request->file('profile_photo'));
 
-        try {
-            $data['employee_code'] = 'EMP' . str_pad((string) (Employee::withTrashed()->max('id') + 1), 4, '0', STR_PAD_LEFT);
+        // try {
+        //     $data['employee_code'] = 'EMP' . str_pad((string) (Employee::withTrashed()->max('id') + 1), 4, '0', STR_PAD_LEFT);
 
-            if ($request->hasFile('profile_photo')) {
-                $path = $request->file('profile_photo')->store(self::PHOTO_DIR, self::PHOTO_DISK);
-                $data['profile_photo'] = $path;
-            }
+        //     if ($request->hasFile('profile_photo')) {
+        //         $path = $request->file('profile_photo')->store(self::PHOTO_DIR, self::PHOTO_DISK);
+        //         $data['profile_photo'] = $path;
+        //     }
 
-            Employee::create($data);
-        } catch (\Throwable $e) {
-            if ($path) {
-                Storage::disk(self::PHOTO_DISK)->delete($path);
-            }
+        //     Employee::create($data);
+        // } catch (\Throwable $e) {
+        //     if ($path) {
+        //         Storage::disk(self::PHOTO_DISK)->delete($path);
+        //     }
 
-            Log::error('Employee create failed: ' . $e->getMessage());
+        //     Log::error('Employee create failed: ' . $e->getMessage());
 
-            return back()->withInput()->with('error', 'Failed to create employee.');
-        }
+        //     return back()->withInput()->with('error', 'Failed to create employee.');
+        // }
 
         return redirect()->route('admin.employees.index')->with('success', 'Employee created successfully.');
     }
 
     public function show(int $id)
     {
-        $employee = Employee::withTrashed()->findOrFail($id);
+        Gate::authorize('viewAny', Employee::class);
+        $employee = $this->employeeService->getEmployeeById($id);
 
         $employee->load([
             'department',
@@ -119,9 +125,11 @@ class EmployeeController extends Controller
 
     public function edit(int $id)
     {
-        $employee = Employee::findOrFail($id);
+        Gate::authorize('update', Employee::class);
+        $employee = $this->employeeService->getEmployeeById($id);
+        $availableUsers = $this->availableUsers($employee); 
 
-        return view('employees.edit', compact('employee'));
+        return view('employees.edit',compact('employee', 'availableUsers' ));
     }
 
     public function update(EmployeeRequest $request, Employee $employee)
@@ -129,72 +137,59 @@ class EmployeeController extends Controller
         $data = $request->validated();
         unset($data['profile_photo']);
 
-        $oldPhoto = $employee->profile_photo;
-        $newPhoto = null;
+        $this->employeeService->updateEmployee($employee->id, $data, $request->file('profile_photo'));
 
-        try {
-            if ($request->hasFile('profile_photo')) {
-                $newPhoto = $request->file('profile_photo')->store(self::PHOTO_DIR, self::PHOTO_DISK);
-                $data['profile_photo'] = $newPhoto;
-            }
+        // $oldPhoto = $employee->profile_photo;
+        // $newPhoto = null;
 
-            $employee->update($data);
-        } catch (\Throwable $e) {
-            if ($newPhoto) {
-                Storage::disk(self::PHOTO_DISK)->delete($newPhoto);
-            }
+    //     try {
+    //         if ($request->hasFile('profile_photo')) {
+    //             $newPhoto = $request->file('profile_photo')->store(self::PHOTO_DIR, self::PHOTO_DISK);
+    //             $data['profile_photo'] = $newPhoto;
+    //         }
 
-            Log::error('Employee update failed: ' . $e->getMessage(), ['employee_id' => $employee->id]);
+    //         $employee->update($data);
+    //     } catch (\Throwable $e) {
+    //         if ($newPhoto) {
+    //             Storage::disk(self::PHOTO_DISK)->delete($newPhoto);
+    //         }
 
-            return back()->withInput()->with('error', 'Could not update the employee. Please try again.');
+    //         Log::error('Employee update failed: ' . $e->getMessage(), ['employee_id' => $employee->id]);
+
+    //         return back()->withInput()->with('error', 'Could not update the employee. Please try again.');
+    //     }
+
+    //     if ($newPhoto && $oldPhoto) {
+    //         Storage::disk(self::PHOTO_DISK)->delete($oldPhoto);
+    //     }
+
+     return redirect()->route('admin.employees.show', $employee)->with('success', 'Employee updated.');
+     }
+
+        public function destroy(Employee $employee)
+        {
+            Gate::authorize('delete', $employee);
+
+            DB::transaction(function () use ($employee) {
+                $employee->update(['status' => Status::Inactive]);
+                $employee->delete();                            // soft delete: fills deleted_at
+            });
+
+            return redirect()->route('admin.employees.index')->with('success', 'Employee deactivated successfully.');
         }
-
-        if ($newPhoto && $oldPhoto) {
-            Storage::disk(self::PHOTO_DISK)->delete($oldPhoto);
-        }
-
-        return redirect()->route('admin.employees.show', $employee)->with('success', 'Employee updated.');
-    }
-
-    public function destroy(Employee $employee)
-    {
-        DB::transaction(function () use ($employee) {
-            $employee->status = Status::Inactive;
-            $employee->saveQuietly();
-            $employee->delete();
-        });
-
-        return redirect()->route('admin.employees.index')->with('success', 'Employee deactivated successfully.');
-    }
 
     public function restore(int $id)
     {
-        $employee = Employee::withTrashed()->findOrFail($id);
-        abort_unless($employee->trashed(), 404);
-
-        DB::transaction(function () use ($employee) {
-            $employee->restore();
-            $employee->status = Status::Active;
-            $employee->saveQuietly();
-        });
-
+        Gate::authorize('restore', Employee::class);
+        $this->employeeService->restoreEmployee($id);
         return redirect()->route('admin.employees.index', ['with_trashed' => 1])
             ->with('success', 'Employee restored successfully.');
     }
 
     public function forceDelete(int $id)
     {
-        abort_if(auth()->check() && auth()->user()->role !== Role::Admin, 403);
-
-        $employee = Employee::withTrashed()->findOrFail($id);
-        abort_unless($employee->trashed(), 404);
-
-        $photo = $employee->profile_photo;
-        $employee->forceDelete();
-
-        if ($photo) {
-            Storage::disk(self::PHOTO_DISK)->delete($photo);
-        }
+        Gate::authorize('forceDelete', Employee::class);
+        $this->employeeService->forceDeleteEmployee($id);
 
         return redirect()->route('admin.employees.index', ['with_trashed' => 1])
             ->with('success', 'Employee permanently deleted.');
@@ -218,15 +213,6 @@ class EmployeeController extends Controller
         ]);
     }
 
-    private function filterRules(): array
-    {
-        return [
-            'q' => ['nullable', 'string', 'max:100'],
-            'department' => ['nullable', 'integer', 'exists:departments,id'],
-            'status' => ['nullable', Rule::enum(Status::class)],
-            'gender' => ['nullable', Rule::enum(Gender::class)],
-        ];
-    }
 
     private function filteredQuery(array $filters): Builder
     {
@@ -240,5 +226,19 @@ class EmployeeController extends Controller
                 default => $query,
             })
             ->when($filters['gender'] ?? null, fn (Builder $query, $gender) => $query->where('gender', $gender));
+    }
+
+    private function availableUsers(?Employee $employee = null): array
+    {
+        return User::where('role', Role::Employee->value)
+            ->where(function ($query) use ($employee) {
+                $query->doesntHave('employee');
+                if ($employee?->user_id) {
+                    $query->orWhere('id', $employee->user_id);
+                }
+            })
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
     }
 }

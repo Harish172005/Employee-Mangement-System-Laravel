@@ -9,6 +9,10 @@
 <body class="bg-light text-center" style="margin-top: 12%;">
     <h1 class="display-1 fw-bold">@yield('code')</h1>
     <p class="fs-5">@yield('message')</p>
-    <a href="{{ url('/') }}" class="btn btn-primary">Back to home</a>
+    @if (auth()->user()?->role->value === 'admin')
+        <a href="{{ route('admin.dashboard') }}" class="btn btn-primary">Back to dashboard</a>
+    @elseif (auth()->user()?->role->value === 'employee')
+        <a href="{{ route('profile.show', auth()->user()?->employee?->id) }}" class="btn btn-primary">Back to profile</a>
+    @endif
 </body>
 </html>

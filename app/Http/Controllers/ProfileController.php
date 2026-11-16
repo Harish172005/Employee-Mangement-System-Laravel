@@ -3,51 +3,67 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use App\Models\Department;
+use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
     // Dummy data. In Module 8 this becomes the logged-in employee: $request->user()->employee
-    private function sample(): array
-    {
-        return [
-            'code' => 'EMP001', 'first_name' => 'John', 'last_name' => 'Doe',
-            'email' => 'john@example.com', 'phone' => '9876543210',
-            'address' => 'Salem, Tamil Nadu', 'department' => 'IT',
-            'designation' => 'Developer', 'date_of_joining' => '2024-06-01',
-            'status' => 'active',
-        ];
-    }
 
     public function show()
     {
-        $employee = $this->sample();
+        $employee = auth()->user()->employee;
+        Gate::authorize('view', $employee);
+
+        $employee = Employee::findOrFail($employee->id);
 
         return view('profile.show', compact('employee'));
     }
 
     public function edit()
     {
-        $employee = $this->sample();
+        $employee = auth()->user()->employee;
+        Gate::authorize('update', $employee);
 
         return view('profile.edit', compact('employee'));
     }
 
     public function update(Request $request)
     {
-        return redirect()->route('profile.show')->with('success', 'Profile updated (placeholder)');
+        $employee = auth()->user()->employee;
+        Gate::authorize('update', $employee);
+        return redirect()->route('profile.show')->with('success', 'Profile updated successfullly');
     }
 
    public function department()
     {
-        $employee = Employee::where('user_id', auth()->id())
+        $department = auth()->user()->employee->department;
+        Gate::authorize('view', $department);   
+        $employee = Employee::where('email', auth()->user()->email)
             ->firstOrFail();
 
-        $department = Department::findOrFail($employee->department_id);
+        $query = Department::withCount('employees')->findOrFail($employee->department_id);
+        
+         $department = ['name' => $query->name, 
+        'description' => $query->description, 
+        'employee_count' => $query->employees_count, 
+        'status' => $query->status];
 
-        return view('profile.department', compact('department'));
+        $query = Employee::where('department_id', $employee->department_id)
+            ->get();
+        $employees = $query->map(function ($employee) {
+            return [
+                'employee_code' => $employee->employee_code,
+                'full_name' => $employee->full_name,
+                'email' => $employee->email,
+                'status' => $employee->status,
+            ];
+        });
+        return view('profile.department', compact('department', 'employees'));
     }
+
 
     public function editPassword()
     {
