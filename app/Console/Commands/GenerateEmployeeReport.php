@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Employee;
 use App\Models\Department;
+use App\Models\Employee;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -36,11 +36,11 @@ class GenerateEmployeeReport extends Command
         $totalDepartments = Department::count();
 
         // Prepare report
-        $report = "
+        $report = '
 ========================================
        EMPLOYEE MANAGEMENT REPORT
 ========================================
-Generated At: " . now()->format('d-m-Y h:i:s A') . "
+Generated At: '.now()->format('d-m-Y h:i:s A')."
 
 Total Employees: {$totalEmployees}
 Active Employees: {$activeEmployees}
@@ -64,7 +64,7 @@ Total Departments: {$totalDepartments}
         // Send report through email
         $recipient = config('mail.report_to');
 
-        if (!$recipient) {
+        if (! $recipient) {
             $this->error('Report email recipient is not configured.');
 
             return self::FAILURE;

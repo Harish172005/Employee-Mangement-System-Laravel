@@ -2,20 +2,15 @@
 
 namespace App\Http\Controllers;
 
-
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Http\Request;
 use App\Services\ProfileService;
-
-
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ProfileController extends Controller
 {
     // Dummy data. In Module 8 this becomes the logged-in employee: $request->user()->employee
 
-    public function __construct(protected ProfileService $profileService)
-    {
-    }
+    public function __construct(protected ProfileService $profileService) {}
 
     public function showAdmin()
     {
@@ -27,7 +22,7 @@ class ProfileController extends Controller
 
         $employee = $this->profileService->getOwnProfile();
 
-         Gate::authorize('view', $employee);
+        Gate::authorize('view', $employee);
 
         return view('profile.show', compact('employee'));
     }
@@ -45,16 +40,17 @@ class ProfileController extends Controller
 
         $employee = $this->profileService->updateOwnProfile($request->all());
         Gate::authorize('update', $employee);
+
         return redirect()->route('profile.show')->with('success', 'Profile updated successfullly');
     }
 
-   public function department()
-    {  
-  
+    public function department()
+    {
+
         $id = auth()->user()->employee->id;
         $department = $this->profileService->getOwnDepartment();
 
-        Gate::authorize('view', $department); 
+        Gate::authorize('view', $department);
 
         $departmentPayload = [
             'name' => $department->name,
@@ -62,19 +58,19 @@ class ProfileController extends Controller
             'employee_count' => $department->employees_count,
             'status' => $department->status,
         ];
-        
-            $employeesPayload = $department->employees->map(fn ($employee) => [
+
+        $employeesPayload = $department->employees->map(fn ($employee) => [
             'employee_code' => $employee->employee_code,
             'full_name' => $employee->full_name,
             'email' => $employee->email,
             'status' => $employee->status,
         ]);
-       return view('profile.department', [
+
+        return view('profile.department', [
             'department' => $departmentPayload,
             'employees' => $employeesPayload,
         ]);
     }
-
 
     public function editPassword()
     {
@@ -83,21 +79,21 @@ class ProfileController extends Controller
 
     public function updatePassword(Request $request)
     {
-         $validated = $request->validate([
-        'current_password' => ['required'],
-        'password' => [
-            'required',
-            'confirmed',
-            'min:8',
-        ],
-    ]);
+        $validated = $request->validate([
+            'current_password' => ['required'],
+            'password' => [
+                'required',
+                'confirmed',
+                'min:8',
+            ],
+        ]);
 
-    $this->profileService->changePassword(
-        auth()->id(),
-        $validated['current_password'],
-        $validated['password']
-    );
-        
+        $this->profileService->changePassword(
+            auth()->id(),
+            $validated['current_password'],
+            $validated['password']
+        );
+
         $profileRoute = auth()->user()->role->value === 'admin'
             ? 'admin.profile.show'
             : 'profile.show';

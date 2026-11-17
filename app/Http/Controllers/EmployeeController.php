@@ -5,22 +5,22 @@ namespace App\Http\Controllers;
 use App\Enums\Status;
 use App\Http\Requests\EmployeeCreateRequest;
 use App\Http\Requests\EmployeeEditRequest;
+use App\Http\Requests\EmployeeFilterRequest;
 use App\Models\Employee;
+use App\Services\EmployeeService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use App\Services\EmployeeService;
-use App\Http\Requests\EmployeeFilterRequest;
+
 class EmployeeController extends Controller
 {
-    public function __construct(protected EmployeeService $employeeService){
-    }
+    public function __construct(protected EmployeeService $employeeService) {}
 
-    public function index(EmployeeFilterRequest $request)
+    public function index()
     {
         Gate::authorize('viewAny', Employee::class);
-        $filters = $request->validated();
         $employees = $this->employeeService->getAllEmployees();
-        return view('employees.index', compact('employees', 'filters'));
+
+        return view('employees.index', compact('employees'));
     }
 
     public function search(EmployeeFilterRequest $request)
@@ -30,28 +30,28 @@ class EmployeeController extends Controller
         $employees = $this->employeeService->getFilteredEmployees($filters);
 
         $employees->getCollection()->transform(function (Employee $employee) {
-        return [
-            'id' => $employee->id,
-            'employee_code' => $employee->employee_code,
-            'first_name' => $employee->first_name,
-            'last_name' => $employee->last_name,
-            'status' => $employee->status->value,
-            'deleted_at' => $employee->deleted_at,
+            return [
+                'id' => $employee->id,
+                'employee_code' => $employee->employee_code,
+                'first_name' => $employee->first_name,
+                'last_name' => $employee->last_name,
+                'status' => $employee->status->value,
+                'deleted_at' => $employee->deleted_at,
 
-            'department' => [
-                'id' => $employee->department?->id,
-                'name' => $employee->department?->name,
-            ],
+                'department' => [
+                    'id' => $employee->department?->id,
+                    'name' => $employee->department?->name,
+                ],
 
-            'urls' => [
-                'show' => route('admin.employees.show', $employee),
-                'edit' => route('admin.employees.edit', $employee),
-                'destroy' => route('admin.employees.destroy', $employee),
-                'restore' => route('admin.employees.restore', $employee),
-                'force_delete' => route('admin.employees.force-delete', $employee),
-            ],
-        ];
-    });
+                'urls' => [
+                    'show' => route('admin.employees.show', $employee),
+                    'edit' => route('admin.employees.edit', $employee),
+                    'destroy' => route('admin.employees.destroy', $employee),
+                    'restore' => route('admin.employees.restore', $employee),
+                    'force_delete' => route('admin.employees.force-delete', $employee),
+                ],
+            ];
+        });
 
         return response()->json([
             'status' => true,
@@ -113,7 +113,7 @@ class EmployeeController extends Controller
         Gate::authorize('update', Employee::class);
         $employee = $this->employeeService->getEmployeeById($id);
 
-        return view('employees.edit',compact('employee'));
+        return view('employees.edit', compact('employee'));
     }
 
     public function update(EmployeeEditRequest $request, Employee $employee)
@@ -135,22 +135,23 @@ class EmployeeController extends Controller
             ->with('success', 'Employee updated successfully.');
     }
 
-     public function destroy(Employee $employee)
-     {
-            Gate::authorize('delete', $employee);
+    public function destroy(Employee $employee)
+    {
+        Gate::authorize('delete', $employee);
 
-            DB::transaction(function () use ($employee) {
-                $employee->update(['status' => Status::Inactive]);
-                $employee->delete();                            // soft delete: fills deleted_at
-            });
+        DB::transaction(function () use ($employee) {
+            $employee->update(['status' => Status::Inactive]);
+            $employee->delete();                            // soft delete: fills deleted_at
+        });
 
-            return redirect()->route('admin.employees.index')->with('success', 'Employee deactivated successfully.');
-     }
+        return redirect()->route('admin.employees.index')->with('success', 'Employee deactivated successfully.');
+    }
 
     public function restore(int $id)
     {
         Gate::authorize('restore', Employee::class);
         $this->employeeService->restoreEmployee($id);
+
         return redirect()->route('admin.employees.index', ['with_trashed' => 1])
             ->with('success', 'Employee restored successfully.');
     }
@@ -171,9 +172,9 @@ class EmployeeController extends Controller
 
         foreach ($employees as $employee) {
             $csv .= implode(',', array_map(
-                fn ($value) => '"' . str_replace('"', '""', (string) $value) . '"',
+                fn ($value) => '"'.str_replace('"', '""', (string) $value).'"',
                 [$employee->employee_code, $employee->full_name, $employee->email, $employee->department?->name, $employee->status->value]
-            )) . "\n";
+            ))."\n";
         }
 
         return response($csv, 200, [
@@ -181,19 +182,4 @@ class EmployeeController extends Controller
             'Content-Disposition' => 'attachment; filename="employees.csv"',
         ]);
     }
-
-
-    // private function filteredQuery(array $filters): Builder
-    // {
-    //     return Employee::query()
-    //         ->with(['department', 'user'])
-    //         ->search($filters['q'] ?? null)
-    //         ->when($filters['department'] ?? null, fn (Builder $query, $department) => $query->where('department_id', $department))
-    //         ->when($filters['status'] ?? null, fn (Builder $query, $status) => match ($status) {
-    //             Status::Active->value => $query->active(),
-    //             Status::Inactive->value => $query->inactive(),
-    //             default => $query,
-    //         })
-    //         ->when($filters['gender'] ?? null, fn (Builder $query, $gender) => $query->where('gender', $gender));
-    // }
 }

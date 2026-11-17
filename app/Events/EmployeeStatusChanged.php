@@ -14,6 +14,5 @@ class EmployeeStatusChanged
         public Employee $employee,
         public string $oldStatus,
         public string $newStatus
-    ) {
-    }
+    ) {}
 }

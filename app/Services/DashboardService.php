@@ -8,8 +8,7 @@ class DashboardService
 {
     public function __construct(
         private DashboardRepository $dashboardRepository
-    ) {
-    }
+    ) {}
 
     public function getDashboardData(): array
     {

@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Gender;
+use App\Enums\Status;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enums\Status;
-use App\Enums\Gender;
 
 class EmployeeFilterRequest extends FormRequest
 {
@@ -32,7 +32,7 @@ class EmployeeFilterRequest extends FormRequest
             'gender' => ['nullable', Rule::enum(Gender::class)],
             'sort' => ['nullable', Rule::in(['employee_code', 'first_name', 'last_name', 'salary', 'date_of_joining', 'created_at'])],
             'direction' => ['nullable', Rule::in(['asc', 'desc'])],
-            'with_trashed' => ['nullable', 'boolean']
+            'with_trashed' => ['nullable', 'boolean'],
         ];
     }
 
@@ -47,7 +47,7 @@ class EmployeeFilterRequest extends FormRequest
             'gender.enum' => 'The gender filter must be a valid gender.',
             'sort.in' => 'The sort field must be one of the following: employee_code, first_name, last_name, salary, date_of_joining, created_at.',
             'direction.in' => 'The direction field must be either asc or desc.',
-            'with_trashed.boolean' => 'The with_trashed field must be true or false.'
+            'with_trashed.boolean' => 'The with_trashed field must be true or false.',
         ];
     }
 }

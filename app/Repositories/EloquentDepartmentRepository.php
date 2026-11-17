@@ -2,18 +2,18 @@
 
 namespace App\Repositories;
 
+use App\Contracts\DepartmentRepository;
+use App\Enums\Status;
 use App\Models\Department;
-use App\Contracts\DepartmentRepository; 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use App\Enums\Status;   
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
-
-class EloquentDepartmentRepository implements DepartmentRepository{
+class EloquentDepartmentRepository implements DepartmentRepository
+{
     public function getAllDepartments($filters = []): LengthAwarePaginator
     {
-        $query =  Department::query()
+        $query = Department::query()
             ->withCount('employees')
             ->when($filters['q'] ?? null, fn (Builder $query, $term) => $query->where(function (Builder $query) use ($term) {
                 $query->where('name', 'like', "%{$term}%")
@@ -33,7 +33,7 @@ class EloquentDepartmentRepository implements DepartmentRepository{
             ->when($filters['with_trashed'] ?? false, fn (Builder $query) => $query->withTrashed())
             ->orderBy($filters['sort'] ?? 'name', $filters['direction'] ?? 'asc');
 
-            return $query
+        return $query
             ->paginate(10)
             ->withQueryString();
     }
@@ -46,6 +46,7 @@ class EloquentDepartmentRepository implements DepartmentRepository{
     public function updateDepartment(Department $department, array $data): Department
     {
         $department->update($data);
+
         return $department;
     }
 
@@ -56,14 +57,15 @@ class EloquentDepartmentRepository implements DepartmentRepository{
             $department->saveQuietly();
             $department->delete();
         });
-    } 
-    
+    }
+
     public function restoreDepartment(Department $department): bool
     {
         return DB::transaction(function () use ($department) {
             $department->status = Status::Active;
             $department->saveQuietly();
-           return $department->restore();
+
+            return $department->restore();
         });
     }
 
@@ -72,7 +74,6 @@ class EloquentDepartmentRepository implements DepartmentRepository{
         return Department::query()
             ->with('employees')
             ->withCount('employees')
-            ->findOrFail($id); 
+            ->findOrFail($id);
     }
-
 }

@@ -1,8 +1,10 @@
 <?php
 
 namespace App\Contracts;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;  
-use App\Models\Department; 
+
+use App\Models\Department;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+
 interface DepartmentRepository
 {
     public function getAllDepartments($filters = []): LengthAwarePaginator;  // Should return a LengthAwarePaginator

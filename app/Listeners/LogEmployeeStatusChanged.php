@@ -11,7 +11,7 @@ class LogEmployeeStatusChanged
     {
         Log::info('Employee status changed.', [
             'employee_id' => $event->employee->id,
-            'employee_name' => $event->employee->first_name . ' ' . $event->employee->last_name,
+            'employee_name' => $event->employee->first_name.' '.$event->employee->last_name,
             'old_status' => $event->oldStatus,
             'new_status' => $event->newStatus,
         ]);

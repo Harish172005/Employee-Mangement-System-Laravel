@@ -20,19 +20,20 @@ class ProfileService
     {
         $employee = auth()->user()->employee;
 
-        if (!$employee) {
+        if (! $employee) {
             throw new ServiceException('Profile not found.');
         }
+
         return $employee;
     }
-  
+
     public function updateOwnProfile(array $data)
     {
         $profile = $this->getOwnProfile();
 
         $updated = $this->profileRepository->updateProfile($profile, $data);
 
-        if (!$updated) {
+        if (! $updated) {
             throw new ServiceException('Failed to update profile.');
         }
 
@@ -52,14 +53,14 @@ class ProfileService
     {
         $user = auth()->user();
 
-        if (!$user || $user->getKey() !== $userId) {
+        if (! $user || $user->getKey() !== $userId) {
             throw new \Exception('User not found.');
         }
 
-        if (!Hash::check($currentPassword, $user->password)) {
+        if (! Hash::check($currentPassword, $user->password)) {
             throw ValidationException::withMessages([
                 'current_password' => [
-                    'The current password is incorrect.'
+                    'The current password is incorrect.',
                 ],
             ]);
         }
@@ -67,14 +68,14 @@ class ProfileService
         if (Hash::check($newPassword, $user->password)) {
             throw ValidationException::withMessages([
                 'password' => [
-                    'The new password must be different from the current password.'
+                    'The new password must be different from the current password.',
                 ],
             ]);
         }
 
         $updated = $this->profileRepository->updateProfile($user, ['password' => Hash::make($newPassword)]);
 
-        if (!$updated) {
+        if (! $updated) {
             throw new ServiceException('Failed to update password.');
         }
 

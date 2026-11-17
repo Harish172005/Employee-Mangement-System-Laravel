@@ -2,19 +2,16 @@
 
 namespace App\Services;
 
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;   
-use App\Contracts\UserRepository; 
+use App\Contracts\UserRepository;
 
 class UserService
 {
-    public function __construct(protected UserRepository $userRepository)
-    {
-    }
+    public function __construct(protected UserRepository $userRepository) {}
+
     public function deleteUser($user)
     {
-       return $this->userRepository->deleteUser($user);
-       
+        return $this->userRepository->deleteUser($user);
+
     }
 
     public function restoreUser($user)

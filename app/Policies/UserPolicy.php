@@ -2,9 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
-use Illuminate\Auth\Access\Response;
 use App\Enums\Role;
+use App\Models\User;
 
 class UserPolicy
 {
@@ -15,7 +14,6 @@ class UserPolicy
     {
         return $user->role === Role::Admin;
     }
-
 
     public function create(User $user): bool
     {
@@ -47,5 +45,4 @@ class UserPolicy
     {
         return $user->role === Role::Admin;
     }
-
 }

@@ -28,7 +28,7 @@ class ProfileRequest extends FormRequest
             'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ];
     }
-    
+
     public function messages(): array
     {
         return [
@@ -42,5 +42,5 @@ class ProfileRequest extends FormRequest
             'profile_photo.mimes' => 'The profile photo must be a file of type: jpg, jpeg, png.',
             'profile_photo.max' => 'The profile photo may not be greater than 2048 kilobytes.',
         ];
-    }   
+    }
 }

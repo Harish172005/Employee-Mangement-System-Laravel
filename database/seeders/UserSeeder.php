@@ -14,11 +14,11 @@ class UserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@example.com'],
             [
-                'name'     => 'Admin User',
+                'name' => 'Admin User',
                 'username' => 'admin',
                 'password' => 'Admin@123',
-                'role'     => 'admin',
-                'status'   => 'active',
+                'role' => 'admin',
+                'status' => 'active',
             ]
         );
     }

@@ -2,9 +2,9 @@
 
 namespace App\Policies;
 
+use App\Enums\Role;
 use App\Models\Department;
 use App\Models\User;
-use App\Enums\Role;
 
 class DepartmentPolicy
 {
@@ -21,14 +21,13 @@ class DepartmentPolicy
      */
     public function view(User $user, Department $department): bool
     {
-         if ($user->role->value === Role::Admin->value) {
+        if ($user->role->value === Role::Admin->value) {
             return true;
         }
 
-    return $user->employee?->department_id === $department->id;
+        return $user->employee?->department_id === $department->id;
     }
 
-    
     public function create(User $user): bool
     {
         return $user->role === Role::Admin;
