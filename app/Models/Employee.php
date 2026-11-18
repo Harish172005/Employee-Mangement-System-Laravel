@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Filesystem\FilesystemAdapter;
 
 class Employee extends Model
 {
@@ -67,34 +67,30 @@ class Employee extends Model
 
     protected function photoUrl(): Attribute
     {
+        /** @var FilesystemAdapter $disk */
+        $disk = Storage::disk('public');
         return Attribute::get(fn () => $this->profile_photo
-            ? Storage::disk('public')->url($this->profile_photo)
+            ? $disk->url($this->profile_photo)
             : asset('images/avatar.svg'));
-    }
-
-    public function scopeActive($query)
-    {
-        return $query->where('status', Status::Active->value);
-    }
-
-    public function scopeInactive($query)
-    {
-        return $query->where('status', Status::Inactive->value);
     }
 
     public function scopeSearch($query, ?string $term)
     {
-        return $query->when($term, function ($query, $term) {
-            $nameParts = preg_split('/\s+/', trim($term), 2);
-            $query->where(function ($query) use ($term, $nameParts) {
-                $query->where('first_name', 'like', "%{$term}%")
-                    ->orWhere('last_name', 'like', "%{$term}%")
-                    ->orWhere('email', 'like', "%{$term}%")
-                    ->orWhere('employee_code', 'like', "%{$term}%");
-                if (count($nameParts) === 2) {
-                    $query->orWhere(fn ($query) => $query
-                        ->where('first_name', 'like', "%{$nameParts[0]}%")
-                        ->where('last_name', 'like', "%{$nameParts[1]}%"));
+        return $query->when($term, function (Builder $query, $term) {
+
+            $parts = preg_split('/\s+/', trim($term), 2);
+
+            $query->where(function (Builder $query) use ($term, $parts) {
+
+                foreach (['first_name', 'last_name', 'email', 'employee_code'] as $field) {
+                    $query->orWhere($field, 'like', "%{$term}%");
+                }
+
+                if (count($parts) === 2) {
+                    $query->orWhere(fn (Builder $q) => $q
+                        ->where('first_name', 'like', "%{$parts[0]}%")
+                        ->where('last_name', 'like', "%{$parts[1]}%")
+                    );
                 }
             });
         });
