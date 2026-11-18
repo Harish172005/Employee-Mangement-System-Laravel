@@ -4,14 +4,15 @@ namespace App\Models;
 
 use App\Enums\Gender;
 use App\Enums\Status;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Contracts\Filesystem\Filesystem;
 
 class Employee extends Model
 {
@@ -44,17 +45,17 @@ class Employee extends Model
     protected function casts(): array
     {
         return [
-            'date_of_birth'   => 'date',
+            'date_of_birth' => 'date',
             'date_of_joining' => 'date',
-            'salary'          => 'decimal:2',
-            'gender'          => Gender::class,
-            'status'          => Status::class,
+            'salary' => 'decimal:2',
+            'gender' => Gender::class,
+            'status' => Status::class,
         ];
     }
 
     protected static function booted(): void
     {
-      //
+        //
     }
 
     protected function fullName(): Attribute
@@ -107,11 +108,6 @@ class Employee extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function skills(): BelongsToMany
-    {
-        return $this->belongsToMany(Skill::class);
     }
 
     public function activityLogs(): MorphMany

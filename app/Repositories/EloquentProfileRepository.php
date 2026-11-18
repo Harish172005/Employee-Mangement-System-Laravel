@@ -1,9 +1,10 @@
 <?php
+
 namespace App\Repositories;
 
 use App\Contracts\ProfileRepository;
-use App\Models\Employee;
 use App\Models\Department;
+use App\Models\Employee;
 use App\Models\User;
 
 class EloquentProfileRepository implements ProfileRepository
@@ -22,7 +23,7 @@ class EloquentProfileRepository implements ProfileRepository
     {
         $employee = Employee::findOrFail($id);
 
-        if (!$employee) {
+        if (! $employee) {
             return null;
         }
 
@@ -30,17 +31,16 @@ class EloquentProfileRepository implements ProfileRepository
             ->findOrFail($employee->department_id);
 
         return $department;
-    }   
+    }
 
     public function getDepartmentEmployees($employee)
     {
         $department = Department::query()
-        ->withCount('employees')
-        ->with('employees')
-        ->findOrFail($employee->department_id);
+            ->withCount('employees')
+            ->with('employees')
+            ->findOrFail($employee->department_id);
 
-        
-            return $department;
+        return $department;
     }
 
     public function updatePassword(

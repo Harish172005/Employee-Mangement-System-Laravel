@@ -94,6 +94,185 @@ a {
     background: rgba(255, 255, 255, 0.1);
 }
 
+.employee-notifications {
+    position: relative;
+}
+
+.app-navbar .employee-notifications-toggle {
+    position: relative;
+    border: 0;
+    background: transparent;
+    font: inherit;
+}
+
+.employee-notifications-toggle svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.employee-notification-count {
+    position: absolute;
+    top: 0.05rem;
+    right: 0.05rem;
+    display: inline-grid;
+    min-width: 17px;
+    height: 17px;
+    place-items: center;
+    padding: 0 0.2rem;
+    border: 2px solid #17233b;
+    border-radius: 999px;
+    color: #fff;
+    background: #d83b4b;
+    font-size: 0.64rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.employee-notifications-menu {
+    width: min(22rem, calc(100vw - 1.5rem));
+    max-height: min(70vh, 26rem);
+    overflow-y: auto;
+    margin-top: 0.65rem !important;
+    padding: 0.4rem;
+    border: 1px solid var(--ems-border);
+    border-radius: 0.8rem;
+    box-shadow: 0 12px 32px rgba(20, 32, 57, 0.18);
+}
+
+.employee-notifications-heading {
+    position: sticky;
+    top: -0.4rem;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.8rem 0.85rem;
+    border-bottom: 1px solid var(--ems-border);
+    color: var(--ems-ink);
+    background: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.employee-notifications-unread {
+    color: var(--ems-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.employee-notification-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin: 0.35rem 0;
+    padding: 0.8rem;
+    border: 1px solid #e8ebf2;
+    border-radius: 0.7rem;
+    background: #fff;
+}
+
+.employee-notification-card.is-profile-update {
+    border-left: 3px solid var(--ems-primary);
+}
+
+.employee-notification-card.is-general {
+    border-left: 3px solid #8793a8;
+}
+
+.employee-notification-card.is-unread {
+    background: #f5f7ff;
+}
+
+.employee-notification-icon {
+    display: inline-grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 10px;
+    color: #405fca;
+    background: #e9eeff;
+}
+
+.employee-notification-card.is-general .employee-notification-icon {
+    color: #596986;
+    background: #eef1f6;
+}
+
+.employee-notification-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+}
+
+.employee-notification-content {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.employee-notification-context {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: var(--ems-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+}
+
+.employee-notification-title {
+    margin: 0.25rem 0;
+    color: var(--ems-ink);
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.employee-notification-message {
+    margin: 0;
+    color: #596986;
+    font-size: 0.79rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.employee-notification-new {
+    flex: 0 0 auto;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+    color: #3156d3;
+    background: #e8edff;
+    font-size: 0.66rem;
+    font-weight: 700;
+}
+
+.employee-notification-time {
+    display: block;
+    margin-top: 0.35rem;
+    color: var(--ems-muted);
+    font-size: 0.72rem;
+}
+
+.employee-notifications-empty {
+    margin: 0;
+    padding: 1.25rem 0.85rem;
+    color: var(--ems-muted);
+    font-size: 0.84rem;
+    text-align: center;
+}
+
 .app-nav-icon {
     width: 17px;
     height: 17px;
@@ -1323,7 +1502,8 @@ a {
     .app-navigation {
         order: 3;
         flex-basis: 100%;
-        overflow-x: auto;
+        flex-wrap: wrap;
+        overflow: visible;
         padding-bottom: 0.15rem;
     }
 

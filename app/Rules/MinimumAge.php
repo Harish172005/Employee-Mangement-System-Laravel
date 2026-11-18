@@ -2,9 +2,9 @@
 
 namespace App\Rules;
 
-use Illuminate\Support\Carbon;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Support\Carbon;
 use Illuminate\Translation\PotentiallyTranslatedString;
 use InvalidArgumentException;
 

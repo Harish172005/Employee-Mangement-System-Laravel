@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Status;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use App\Enums\Status;
 use Illuminate\Validation\Rule;
 
 class DepartmentRequest extends FormRequest
@@ -25,12 +25,14 @@ class DepartmentRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('department')?->id;
+
         return [
             'name' => ['required', 'string', 'max:100', Rule::unique('departments', 'name')->ignore($id)],
             'description' => ['nullable', 'string', 'max:255'],
             'status' => ['required', Rule::enum(Status::class)],
         ];
     }
+
     public function messages(): array
     {
         return [

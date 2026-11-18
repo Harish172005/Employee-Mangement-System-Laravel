@@ -15,7 +15,8 @@ class HasRoleMiddleware
      */
     public function handle(Request $request, Closure $next, String ...$roles): Response
     {
-         abort_unless($request->user() && in_array($request->user()->role->value, $roles, true), 403);
-         return $next($request);
+        abort_unless($request->user() && in_array($request->user()->role->value, $roles, true), 403);
+
+        return $next($request);
     }
 }

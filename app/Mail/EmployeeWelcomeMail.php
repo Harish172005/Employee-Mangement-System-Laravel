@@ -2,14 +2,13 @@
 
 namespace App\Mail;
 
+use App\Models\Employee;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Employee;
 
 class EmployeeWelcomeMail extends Mailable
 {
@@ -18,10 +17,7 @@ class EmployeeWelcomeMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public Employee $employee)
-    {
-        
-    }
+    public function __construct(public Employee $employee) {}
 
     /**
      * Get the message envelope.

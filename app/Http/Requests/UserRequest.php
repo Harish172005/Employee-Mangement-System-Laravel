@@ -51,5 +51,5 @@ class UserRequest extends FormRequest
             'password.password' => 'The password must meet the password requirements.',
             'password.min' => 'The password must be at least 8 characters long.',
         ];
-    }   
+    }
 }

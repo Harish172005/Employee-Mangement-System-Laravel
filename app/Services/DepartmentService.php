@@ -1,8 +1,9 @@
 <?php
 
 namespace App\Services;
+
 use App\Contracts\DepartmentRepository;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;   
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class DepartmentService
 {
@@ -37,6 +38,7 @@ class DepartmentService
     {
         $department = $this->getDepartmentById($id);
         abort_unless($department?->trashed(), 404);
+
         return $this->departmentRepository->restoreDepartment($department);
     }
 

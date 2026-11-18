@@ -4,14 +4,15 @@ namespace App\Notifications;
 
 use App\Models\Employee;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
 class EmployeeUpdatedNotification extends Notification
 {
     use Queueable;
 
     protected Employee $employee;
+
     protected string $message;
 
     public function __construct(Employee $employee, string $message)
@@ -29,7 +30,7 @@ class EmployeeUpdatedNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Employee Profile Updated')
-            ->greeting('Hello ' . $notifiable->name . ',')
+            ->greeting('Hello '.$notifiable->name.',')
             ->line($this->message)
             ->line('Please contact the administrator if you have any questions.');
     }

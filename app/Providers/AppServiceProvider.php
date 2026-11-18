@@ -2,33 +2,40 @@
 
 namespace App\Providers;
 
+use App\Contracts\AuthRepository;
+use App\Contracts\DashboardRepository;
+use App\Contracts\DepartmentRepository;
+use App\Contracts\EmployeeRepository;
+use App\Contracts\ProfileRepository;
+use App\Contracts\UserRepository;
+use App\Enums\Role;
 use App\Models\Department;
 use App\Models\Employee;
-use App\Observers\EmployeeObserver;
+use App\Models\User;
 use App\Observers\DepartmentObserver;
+use App\Observers\EmployeeObserver;
+use App\Repositories\EloquentAuthRepository;
+use App\Repositories\EloquentDashboardRepository;
+use App\Repositories\EloquentDepartmentRepository;
+use App\Repositories\EloquentEmployeeRepository;
+use App\Repositories\EloquentProfileRepository;
+use App\Repositories\EloquentUserRepository;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use App\Models\User;
-use App\Enums\Role;
-use Illuminate\Support\Facades\Route;
-use App\Contracts\EmployeeRepository;
-use App\Repositories\EloquentEmployeeRepository;
-use App\Contracts\DepartmentRepository;
-use App\Repositories\EloquentDepartmentRepository; 
-use App\Contracts\UserRepository;
-use App\Repositories\EloquentUserRepository; 
-use App\Contracts\ProfileRepository;
-use App\Repositories\EloquentProfileRepository;
-use App\Contracts\DashboardRepository;
-use App\Repositories\EloquentDashboardRepository;   
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-         $this->app->bind(
+        $this->app->bind(
+            AuthRepository::class,
+            EloquentAuthRepository::class
+        );
+
+        $this->app->bind(
             EmployeeRepository::class,
             EloquentEmployeeRepository::class
         );
@@ -72,12 +79,11 @@ class AppServiceProvider extends ServiceProvider
         View::composer('employees.*', function ($view) {
             $view->with('departments', Department::query()->orderBy('name')->pluck('name', 'id'));
         });
-       $isAdmin = fn (User $user): bool =>
-        $user->role === Role::Admin;
+        $isAdmin = fn (User $user): bool => $user->role === Role::Admin;
 
-    Gate::define('manage-departments', $isAdmin);
-    Gate::define('manage-employees', $isAdmin);
-    Gate::define('manage-users', $isAdmin);
-    Gate::define('manage-reports', $isAdmin);
+        Gate::define('manage-departments', $isAdmin);
+        Gate::define('manage-employees', $isAdmin);
+        Gate::define('manage-users', $isAdmin);
+        Gate::define('manage-reports', $isAdmin);
     }
 }

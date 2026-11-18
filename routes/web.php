@@ -32,7 +32,6 @@ use Illuminate\Support\Facades\Route;
 // 1. Public
 // ------------------------------------------------------------------
 
-
 Route::redirect('/', '/login');
 
 Route::controller(AuthController::class)->group(function () {
@@ -62,9 +61,6 @@ Route::get('/language/{locale}', function (string $locale) {
 
 })->name('language.switch');
 
-
-
-
 // ------------------------------------------------------------------
 // 3. Admin area (logged in, active account, admin role)
 // ------------------------------------------------------------------
@@ -76,7 +72,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active', 'role:admi
     });
 
     // Employees: the extra routes first, then the standard resource routes
-    Route::get('/dashboard', DashboardController::class) ->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::controller(EmployeeController::class)->prefix('employees')->middleware('can:manage-employees')->name('employees.')->group(function () {
         Route::get('search', 'search')->name('search');                 // JSON for the live search
         Route::get('export', 'export')->name('export');                 // CSV download
@@ -92,8 +88,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active', 'role:admi
     Route::resource('users', UserController::class)->middleware('can:manage-users');
 
 });
-
-
 
 Route::prefix('my')->name('profile.')->middleware(['auth', 'active', 'role:employee'])->controller(ProfileController::class)->group(function () {
     Route::get('profile', 'show')->name('show');

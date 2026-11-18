@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Status;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Password as PasswordBroker;
-use App\Models\User;
 use App\Enums\Role;
+use App\Services\AuthService;
+use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
+    public function __construct(protected AuthService $authService) {}
+
     public function showLogin()
     {
         return view('auth.login');
@@ -24,62 +21,52 @@ class AuthController extends Controller
             'username' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
-        $key = Str::lower($request->username) . '|' . $request->ip();
-        
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            $seconds = RateLimiter::availableIn($key);
-            return back()->withErrors(['username' => "Too many login attempts. Please try again in $seconds seconds."])->onlyInput('username');
-        }
+        $result = $this->authService->login(
+            $credentials,
+            $request->boolean('remember'),
+            $request->ip()
+        );
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            RateLimiter::hit($key, 60);
-            return back()->withErrors(['username' => 'These credentials do not match our records.'])->onlyInput('username');
+        if (! $result['success']) {
+            return back()->withErrors(['username' => $result['error']])->onlyInput('username');
         }
-
-        if (Auth::user()->status !== Status::Active) {
-            Auth::logout();
-
-            return back()->withErrors(['username' => 'This account is inactive.'])->onlyInput('username');
-        }
-        RateLimiter::clear($key);
 
         $request->session()->regenerate();
-        $home = match ($request->user()->role) {
-        Role::Admin    => route('admin.dashboard'),
-        Role::Employee => route('profile.show'),
-    };
+        $home = match ($result['user']->role) {
+            Role::Admin => route('admin.dashboard'),
+            Role::Employee => route('profile.show'),
+        };
 
         return redirect()->intended($home)->with('success', 'Logged in successfully.');
     }
 
-    public function showForgotForm(){
-        
+    public function showForgotForm()
+    {
+
         return view('auth.forgot-password');
     }
 
-    public function sendResetLink(Request $request){
+    public function sendResetLink(Request $request)
+    {
         $request->validate([
             'email' => ['required', 'email'],
         ]);
-            $user = User::where('email', $request->email)->first();
-            if(!$user){
-                return back()->withErrors(['email' => 'No user found with this email address.'])->onlyInput('email');
-            }
+        $result = $this->authService->sendResetLink($request->email);
 
-        $status = PasswordBroker::sendResetLink(
-            $request->only('email')
-        );
+        if (! $result['status']) {
+            return back()->withErrors(['email' => 'No user found with this email address.'])->onlyInput('email');
+        }
 
-       return $status === PasswordBroker::RESET_LINK_SENT
-        ? back()->with([
-            'status' => __($status),
-            'message' => 'Password reset link sent successfully.',
-        ])
-        : back()->withErrors([
-            'email' => __($status),
-        ])->with([
-            'message' => 'Unable to send the password reset link.',
-        ]);
+        return $result['success']
+         ? back()->with([
+             'status' => __($result['status']),
+             'message' => 'Password reset link sent successfully.',
+         ])
+         : back()->withErrors([
+             'email' => __($result['status']),
+         ])->with([
+             'message' => 'Unable to send the password reset link.',
+         ]);
     }
 
     public function showResetForm(Request $request, $token = null)
@@ -95,23 +82,18 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $status = PasswordBroker::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->forceFill([
-                    'password' => bcrypt($password),
-                ])->save();
-            }
+        $result = $this->authService->resetPassword(
+            $request->only('email', 'password', 'password_confirmation', 'token')
         );
 
-        return $status === PasswordBroker::PASSWORD_RESET
-                    ? redirect()->route('login')->with('success', __($status))
-                    : back()->withErrors(['email' => [__($status)]]);
+        return $result['success']
+                    ? redirect()->route('login')->with('success', __($result['status']))
+                    : back()->withErrors(['email' => [__($result['status'])]]);
     }
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        $this->authService->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

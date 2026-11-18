@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\Gender;
+use App\Enums\Role;
 use App\Enums\Status;
 use App\Rules\MinimumAge;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enums\Role;
+
 class EmployeeCreateRequest extends FormRequest
 {
     /**
@@ -24,127 +25,125 @@ class EmployeeCreateRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
-
     public function rules(): array
     {
-     $employeeId = $this->route('employee')?->id;
+        $employeeId = $this->route('employee')?->id;
 
-     return [
+        return [
 
-        'username' => [
-            'required',
-            'string',
-            'max:255',
-        ],
+            'username' => [
+                'required',
+                'string',
+                'max:255',
+            ],
 
-        'email' => [
-            'required',
-            'email',
-            'max:255',
-            Rule::unique('users', 'email'),
-        ],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email'),
+            ],
 
-        'role' => [
-            'required',
-            Rule::enum(Role::class),
-        ],
+            'role' => [
+                'required',
+                Rule::enum(Role::class),
+            ],
 
-        'status' => [
-            'required',
-            Rule::enum(Status::class),
-        ],
+            'status' => [
+                'required',
+                Rule::enum(Status::class),
+            ],
 
-        'password' => [
-            'required',
-            'string',
-            'min:8',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/',
-        ],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/',
+            ],
 
+            'name' => [
+                'required_if:role,admin',
+                'nullable',
+                'string',
+                'max:255',
+            ],
 
-        'name' => [
-            'required_if:role,admin',
-            'nullable',
-            'string',
-            'max:255',
-        ],
+            'first_name' => [
+                'required_if:role,employee',
+                'nullable',
+                'string',
+                'max:50',
+            ],
 
+            'last_name' => [
+                'required_if:role,employee',
+                'nullable',
+                'string',
+                'max:50',
+            ],
 
-        'first_name' => [
-            'required_if:role,employee',
-            'nullable',
-            'string',
-            'max:50',
-        ],
+            'phone' => [
+                'required_if:role,employee',
+                'nullable',
+                'string',
+                'max:10',
+            ],
 
-        'last_name' => [
-            'required_if:role,employee',
-            'nullable',
-            'string',
-            'max:50',
-        ],
+            'date_of_birth' => [
+                'required_if:role,employee',
+                'nullable',
+                'date',
+                new MinimumAge,
+            ],
 
-        'phone' => [
-            'required_if:role,employee',
-            'nullable',
-            'string',
-            'max:10',
-        ],
+            'date_of_joining' => [
+                'required_if:role,employee',
+                'nullable',
+                'date',
+            ],
 
-        'date_of_birth' => [
-            'required_if:role,employee',
-            'nullable',
-            'date',
-            new MinimumAge,
-        ],
+            'gender' => [
+                'required_if:role,employee',
+                'nullable',
+                Rule::enum(Gender::class),
+            ],
 
-        'date_of_joining' => [
-            'required_if:role,employee',
-            'nullable',
-            'date',
-        ],
+            'department_id' => [
+                'required_if:role,employee',
+                'nullable',
+                'exists:departments,id',
+            ],
 
-        'gender' => [
-            'required_if:role,employee',
-            'nullable',
-            Rule::enum(Gender::class),
-        ],
+            'designation' => [
+                'required_if:role,employee',
+                'nullable',
+                'string',
+                'max:100',
+            ],
 
-        'department_id' => [
-            'required_if:role,employee',
-            'nullable',
-            'exists:departments,id',
-        ],
+            'salary' => [
+                'required_if:role,employee',
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:99999999.99',
+            ],
 
-        'designation' => [
-            'required_if:role,employee',
-            'nullable',
-            'string',
-            'max:100',
-        ],
+            'address' => [
+                'nullable',
+                'string',
+                'max:5000',
+            ],
 
-        'salary' => [
-            'required_if:role,employee',
-            'nullable',
-            'numeric',
-            'min:0',
-            'max:99999999.99',
-        ],
+            'profile_photo' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:2048',
+            ],
+        ];
+    }
 
-        'address' => [
-            'nullable',
-            'string',
-            'max:5000',
-        ],
-
-        'profile_photo' => [
-            'nullable',
-            'image',
-            'mimes:jpg,jpeg,png',
-            'max:2048',
-        ],
-    ];
-}
     public function messages(): array
     {
         return [
@@ -183,6 +182,6 @@ class EmployeeCreateRequest extends FormRequest
             'profile_photo.image' => 'The profile photo must be an image.',
             'profile_photo.mimes' => 'The profile photo must be a file of type: jpg, jpeg, png.',
             'profile_photo.max' => 'The profile photo may not be greater than 2048 kilobytes.',
-        ];  
+        ];
     }
 }

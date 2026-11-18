@@ -4,22 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Enums\Role;
 use App\Enums\Status;
+use App\Http\Requests\DepartmentFilterRequest;
 use App\Http\Requests\DepartmentRequest;
 use App\Models\Department;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Gate;
 use App\Services\DepartmentService;
-use App\Http\Requests\DepartmentFilterRequest;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class DepartmentController extends Controller
 {
-    public function __construct(protected DepartmentService $departmentService)
-    { 
-    }
-   
+    public function __construct(protected DepartmentService $departmentService) {}
+
     public function index(DepartmentFilterRequest $request)
     {
         $filters = $request->validated();

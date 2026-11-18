@@ -17,7 +17,7 @@ class EmployeeObserver
         $changed = collect($employee->getChanges())->except('updated_at')->keys();
 
         if ($changed->isNotEmpty()) {
-            $this->log($employee, 'updated', 'Changed: ' . $changed->implode(', '));
+            $this->log($employee, 'updated', 'Changed: '.$changed->implode(', '));
         }
     }
 
@@ -38,8 +38,8 @@ class EmployeeObserver
     private function log(Employee $employee, string $action, string $description): void
     {
         $employee->activityLogs()->create([
-            'user_id'     => auth()->id(),   // null until login exists (Module 8) or when seeding
-            'action'      => $action,
+            'user_id' => auth()->id(),   // null until login exists (Module 8) or when seeding
+            'action' => $action,
             'description' => $description,
         ]);
     }

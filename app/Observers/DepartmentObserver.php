@@ -16,15 +16,15 @@ class DepartmentObserver
         $changed = collect($department->getChanges())->except('updated_at')->keys();
 
         if ($changed->isNotEmpty()) {
-            $this->log($department, 'updated', 'Changed: ' . $changed->implode(', '));
+            $this->log($department, 'updated', 'Changed: '.$changed->implode(', '));
         }
     }
 
     private function log(Department $department, string $action, string $description): void
     {
         $department->activityLogs()->create([
-            'user_id'     => auth()->id(),
-            'action'      => $action,
+            'user_id' => auth()->id(),
+            'action' => $action,
             'description' => $description,
         ]);
     }
