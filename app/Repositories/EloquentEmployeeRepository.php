@@ -27,11 +27,7 @@ class EloquentEmployeeRepository implements EmployeeRepository
             ->with(['department', 'user'])
             ->search($filters['q'] ?? null)
             ->when($filters['department'] ?? null, fn (Builder $query, $department) => $query->where('department_id', $department))
-            ->when($filters['status'] ?? null, fn (Builder $query, $status) => match ($status) {
-                Status::Active->value => $query->active(),
-                Status::Inactive->value => $query->inactive(),
-                default => $query,
-            })
+            ->when($filters['status'] ?? null, fn (Builder $query, $status) => $query->where('status', $status))
             ->when($filters['gender'] ?? null, fn (Builder $query, $gender) => $query->where('gender', $gender))
             ->orderBy($filters['sort'] ?? 'last_name', $filters['direction'] ?? 'asc')
             ->orderBy('first_name')
@@ -62,8 +58,7 @@ class EloquentEmployeeRepository implements EmployeeRepository
     {
         return DB::transaction(function () use ($employee) {
             $employee->status = Status::Inactive;
-            $employee->saveQuietly();
-            $employee->delete();
+            return $employee->deleteQuietly();
         });
     }
 
@@ -72,9 +67,7 @@ class EloquentEmployeeRepository implements EmployeeRepository
 
         $restored = DB::transaction(function () use ($employee) {
             $employee->status = Status::Active;
-
-            // $employee->saveQuietly();
-            return $employee->restore();
+            return $employee->restoreQuietly();
         });
 
         return $restored;

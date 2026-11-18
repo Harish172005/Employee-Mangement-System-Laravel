@@ -3,16 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Role;
-use App\Enums\Status;
-use App\Models\User;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Password as PasswordBroker;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    public function __construct(protected AuthService $authService) {}
+
     public function showLogin()
     {
         return view('auth.login');
@@ -24,29 +21,18 @@ class AuthController extends Controller
             'username' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
-        $key = Str::lower($request->username).'|'.$request->ip();
+        $result = $this->authService->login(
+            $credentials,
+            $request->boolean('remember'),
+            $request->ip()
+        );
 
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            $seconds = RateLimiter::availableIn($key);
-
-            return back()->withErrors(['username' => "Too many login attempts. Please try again in $seconds seconds."])->onlyInput('username');
+        if (! $result['success']) {
+            return back()->withErrors(['username' => $result['error']])->onlyInput('username');
         }
-
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            RateLimiter::hit($key, 60);
-
-            return back()->withErrors(['username' => 'These credentials do not match our records.'])->onlyInput('username');
-        }
-
-        if (Auth::user()->status !== Status::Active) {
-            Auth::logout();
-
-            return back()->withErrors(['username' => 'This account is inactive.'])->onlyInput('username');
-        }
-        RateLimiter::clear($key);
 
         $request->session()->regenerate();
-        $home = match ($request->user()->role) {
+        $home = match ($result['user']->role) {
             Role::Admin => route('admin.dashboard'),
             Role::Employee => route('profile.show'),
         };
@@ -65,22 +51,19 @@ class AuthController extends Controller
         $request->validate([
             'email' => ['required', 'email'],
         ]);
-        $user = User::where('email', $request->email)->first();
-        if (! $user) {
+        $result = $this->authService->sendResetLink($request->email);
+
+        if (! $result['status']) {
             return back()->withErrors(['email' => 'No user found with this email address.'])->onlyInput('email');
         }
 
-        $status = PasswordBroker::sendResetLink(
-            $request->only('email')
-        );
-
-        return $status === PasswordBroker::RESET_LINK_SENT
+        return $result['success']
          ? back()->with([
-             'status' => __($status),
+             'status' => __($result['status']),
              'message' => 'Password reset link sent successfully.',
          ])
          : back()->withErrors([
-             'email' => __($status),
+             'email' => __($result['status']),
          ])->with([
              'message' => 'Unable to send the password reset link.',
          ]);
@@ -99,23 +82,18 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $status = PasswordBroker::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->forceFill([
-                    'password' => bcrypt($password),
-                ])->save();
-            }
+        $result = $this->authService->resetPassword(
+            $request->only('email', 'password', 'password_confirmation', 'token')
         );
 
-        return $status === PasswordBroker::PASSWORD_RESET
-                    ? redirect()->route('login')->with('success', __($status))
-                    : back()->withErrors(['email' => [__($status)]]);
+        return $result['success']
+                    ? redirect()->route('login')->with('success', __($result['status']))
+                    : back()->withErrors(['email' => [__($result['status'])]]);
     }
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        $this->authService->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

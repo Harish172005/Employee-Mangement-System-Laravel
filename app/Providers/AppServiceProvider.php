@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Contracts\AuthRepository;
 use App\Contracts\DashboardRepository;
 use App\Contracts\DepartmentRepository;
 use App\Contracts\EmployeeRepository;
@@ -13,6 +14,7 @@ use App\Models\Employee;
 use App\Models\User;
 use App\Observers\DepartmentObserver;
 use App\Observers\EmployeeObserver;
+use App\Repositories\EloquentAuthRepository;
 use App\Repositories\EloquentDashboardRepository;
 use App\Repositories\EloquentDepartmentRepository;
 use App\Repositories\EloquentEmployeeRepository;
@@ -28,6 +30,11 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(
+            AuthRepository::class,
+            EloquentAuthRepository::class
+        );
+
         $this->app->bind(
             EmployeeRepository::class,
             EloquentEmployeeRepository::class
